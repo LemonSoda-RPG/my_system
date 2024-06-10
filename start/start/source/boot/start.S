@@ -14,7 +14,7 @@
   	.code16
  	.text
 	.global _start
-	; .global _first
+	.extern boot_entry
 
 
 _start:
@@ -37,10 +37,13 @@ read_loader:
 	mov $0x2, %cx
 	mov $64, %al
 	mov $0x0080, %dx
-	int $0x13
+	int $0x13  
+	// 调用中断函数之后  有一个寄存器会保存程序的状态  jc 判断若为1  则跳到read_loader
 	jc read_loader
 
-	// jmp .
+	jmp boot_entry
+
+	jmp .
 	
 	// 引导结束段
 	.section boot_end, "ax"

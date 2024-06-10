@@ -8,6 +8,10 @@
         "task.h": "c",
         "types.h": "c",
         "fcntl.h": "c",
-        "_default_fcntl.h": "c"
+        "_default_fcntl.h": "c",
+        "cstdlib": "c",
+        "type_traits": "c",
+        "loader.h": "c",
+        "cpu_instr.h": "c"
     },
 }
