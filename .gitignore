@@ -1,10 +1,1 @@
 build
-*.vhd
-*.dmg
-*.elf
-*.bin
-/image/disk1.vhd
-/image/disk2.vhd
-*.o
-os_dis.txt
-disk.img
