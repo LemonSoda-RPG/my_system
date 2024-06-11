@@ -28,6 +28,14 @@ static inline uint8_t inb(uint16_t port){
 }
 
 
+static inline uint16_t inw(uint16_t port){
+    uint16_t rv;
+    //inb  al, bx
+    __asm__ __volatile__("in %[p], %[v]":[v]"=a"(rv):[p]"d"(port));
+    return rv;
+}
+
+
 static inline void outb(uint16_t port,uint8_t data){
     //outb  al, bx
     __asm__ __volatile__("outb %[v], %[p]"::[p]"d"(port),[v]"a"(data));
@@ -40,7 +48,7 @@ static inline void lgdt(uint32_t start,uint32_t size){
         uint16_t start31_16;
     }gdt;
 
-
+    // 将gdt_table转换为了gdt结构体
     gdt.start31_16 = start >> 16;
     gdt.start15_0 = start & 0xFFFF;
     gdt.limit = size-1;

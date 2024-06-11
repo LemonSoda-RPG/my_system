@@ -1,0 +1,4 @@
+select vdisk file="D:\my_system\image\disk2.vhd" 
+attach vdisk 
+select partition 1 
+assign letter=k 

@@ -23,7 +23,7 @@ _start:
 	.code32
 	.text
 	.global protect_mode_entry
-	.extern load_kernal
+	.extern load_kernel
 	// 有了global修饰  那么外部代码也能调用这个函数  
 	// 和extern的用法有点相似
 protect_mode_entry:
@@ -35,4 +35,4 @@ protect_mode_entry:
 	mov %ax, %fs 
 	mov %ax, %gs 
 
-	jmp $8, $load_kernal
+	jmp $8, $load_kernel
