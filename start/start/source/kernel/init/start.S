@@ -11,3 +11,5 @@ _start:
     push %eax
     call kernel_init
     jmp .
+
+    
