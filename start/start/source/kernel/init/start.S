@@ -14,7 +14,7 @@ _start:
     # 在调用函数之前  将参数进行压栈
     call kernel_init
 
-    jmp gdt_reload
+    jmp $KERNEL_SELECTOR_CS,$gdt_reload
 
 gdt_reload:
     mov $KERNEL_SELECTOR_DS, %ax

@@ -33,7 +33,7 @@ void init_gdt(void)
     segment_desc_set(KERNEL_SELECTOR_CS,0,0xFFFFFFFF,
         SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SRG_TYPE_RW | SEG_D);
 
-    lgdt((uint32_t)gdt_table,sizeof(gdt_table));
+    lgdt((uint32_t)gdt_table,sizeof(gdt_table)-1);
 
 
 }
