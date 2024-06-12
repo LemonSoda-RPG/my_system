@@ -90,8 +90,8 @@ static uint32_t reload_elf(uint8_t* file_buffer)
 		}
 		return elf_hdr->e_entry;
 	}
-
 }
+
 void die(uint8_t a)
 {
 

@@ -3,6 +3,7 @@
     "cmake.sourceDirectory": "${workspaceFolder}/.",
     "C_Cpp.errorSquiggles": "Disabled",
     "files.associations": {
+        "*.py": "python",
         "dirent.h": "c",
         "lib_syscall.h": "c",
         "task.h": "c",
@@ -12,6 +13,8 @@
         "cstdlib": "c",
         "type_traits": "c",
         "loader.h": "c",
-        "cpu_instr.h": "c"
+        "cpu_instr.h": "c",
+        "cpu.h": "c",
+        "os_cfg.h": "c"
     },
 }

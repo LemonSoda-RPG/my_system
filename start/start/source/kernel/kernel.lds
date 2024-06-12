@@ -9,7 +9,7 @@ SECTIONS{
         *(.rodata)
     }
     
-
+    . = 0x200000;
     .data : {
         *(.data)
     }

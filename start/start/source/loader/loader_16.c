@@ -48,12 +48,10 @@ static void detect_memory(void){
     show_msg("detect ok\n\r");
 }
 
-
-
 uint16_t gdt_table[][4] = {
-    {0,0,0,0},
-    {0xFFFF,0x0000,0x9a00,0x00cf},
-    {0xFFFF,0x0000,0x9200,0x00cf},
+    {0,0,0,0},    //无用段
+    {0xFFFF,0x0000,0x9a00,0x00cf},   //代码段
+    {0xFFFF,0x0000,0x9200,0x00cf},   //数据段
 };
 
 //进入保护模式
