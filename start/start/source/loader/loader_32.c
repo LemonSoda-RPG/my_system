@@ -61,7 +61,7 @@ static void read_disk(int sector, int sector_count, uint8_t * buf) {
 
 static uint32_t reload_elf(uint8_t* file_buffer)
 {
-	Elf32_Ehdr *elf_hdr = file_buffer;
+	Elf32_Ehdr *elf_hdr = (Elf32_Ehdr *)file_buffer;
 	if((elf_hdr->e_ident[0] != 0x7F)||elf_hdr->e_ident[1]!='E'
 	||elf_hdr->e_ident[2]!='L'||elf_hdr->e_ident[3]!='F'){
 		return 0;

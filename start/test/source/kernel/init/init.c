@@ -71,6 +71,7 @@ void move_to_first_task(void) {
 }
 
 void init_main(void) {
+    int a = 3/0;
     log_printf("==============================");
     log_printf("Kernel is running....");
     log_printf("Version: %s, name: %s", OS_VERSION, "tiny x86 os");

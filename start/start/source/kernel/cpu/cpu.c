@@ -4,6 +4,7 @@
 static segment_desc_t gdt_table[GDT_TABLE_SIZE];  //这是一个数组
 void segment_desc_set(int selector, uint32_t base,uint32_t limit,uint16_t attr)
 {
+    // 这里面并没有偏移量啊
     int size = sizeof(segment_desc_t);
     segment_desc_t *desc = gdt_table + selector/sizeof(segment_desc_t);
 
@@ -18,6 +19,13 @@ void segment_desc_set(int selector, uint32_t base,uint32_t limit,uint16_t attr)
     desc->base31_24 = (base>>24)&0xFF;
 }
 
+void gate_desc_set(gate_sesc_t* desc,uint16_t selector, uint32_t offset,uint16_t attr)
+{
+    desc->offset15_0 = offset&0xFFFF;
+    desc->selector = selector;
+    desc->attr = attr;
+    desc->offset31_16 = (offset >> 16) &0xFFFF;
+}
 
 void init_gdt(void)
 {
@@ -33,7 +41,7 @@ void init_gdt(void)
     segment_desc_set(KERNEL_SELECTOR_CS,0,0xFFFFFFFF,
         SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SRG_TYPE_RW | SEG_D);
 
-    lgdt((uint32_t)gdt_table,sizeof(gdt_table)-1);
+    lgdt((uint32_t)gdt_table,sizeof(gdt_table));
 
 
 }

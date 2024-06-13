@@ -15,6 +15,7 @@
         "loader.h": "c",
         "cpu_instr.h": "c",
         "cpu.h": "c",
-        "os_cfg.h": "c"
+        "os_cfg.h": "c",
+        "irq.h": "c"
     },
 }

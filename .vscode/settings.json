@@ -3,5 +3,6 @@
         "*.py": "python",
         "loader.h": "c",
         "types.h": "c"
-    }
+    },
+    "cmake.sourceDirectory": "D:/my_system/code/c03.03"
 }
