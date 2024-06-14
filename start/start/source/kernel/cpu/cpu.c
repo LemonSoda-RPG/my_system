@@ -42,6 +42,7 @@ void init_gdt(void)
         SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SRG_TYPE_RW | SEG_D);
 
     lgdt((uint32_t)gdt_table,sizeof(gdt_table));
+    // 重新加载gdt表  开启分段内存
 
 
 }

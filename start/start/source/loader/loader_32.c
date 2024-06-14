@@ -100,7 +100,7 @@ void load_kernel(void)
 {   
     // SYS_KERNEL_LOAD_ADDR 写入内存的位置 从第100扇区读取
     read_disk(100,500,(uint8_t*)SYS_KERNEL_LOAD_ADDR);
-	//这里我们将文件读取到了内存1M的位置 但是我们并不一定在这里运行他
+	// 这里我们将文件读取到了内存1M的位置 但是我们并不一定在这里运行他
 	// 将他解析并拷贝到0x10000再运行
 	uint32_t kernel_entry  = reload_elf((uint8_t*)SYS_KERNEL_LOAD_ADDR);
 	if(kernel_entry==0)
