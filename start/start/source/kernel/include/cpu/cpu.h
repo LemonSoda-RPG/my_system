@@ -21,7 +21,7 @@ typedef struct _gate_sesc_t{
     uint16_t offset31_16;
 }gate_sesc_t;
 
-#define GATE_TYPE_INT   (0xE<<8)
+#define GATE_TYPE_IDT   (0xE<<8)
 #define GATE_P_PRESENT  (1<<15)
 #define GATE_DPL_0      (0<<13)
 #define GATE_DPL_3      (3<<13)

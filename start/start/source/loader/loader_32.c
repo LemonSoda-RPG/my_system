@@ -1,34 +1,5 @@
 #include "loader.h"
 #include "comm/elf.h"
-// static void read_disk(uint32_t sector,uint32_t sector_count,uint8_t * buf)
-// {
-//     outb(0x1F6, 0xE0);
-
-
-//     outb(0x1F2, (uint8_t)(sector_count >> 8));
-//     outb(0x1F3, (uint8_t)(sector >> 24));
-//     outb(0x1F4,0);
-//     outb(0x1F5,0);
-
-
-//     // outb(0x1f6, 0xE0);
-//     outb(0x1F2, (uint8_t)sector_count);
-//     outb(0x1F3, (uint8_t)(sector));
-//     outb(0x1F4, (uint8_t)(sector>>8));
-//     outb(0x1F5, (uint8_t)(sector>>16));
-
-//     outb(0x1F7, 0x24);
-
-//     uint16_t *data_buf = (uint16_t *)buf;
-//     while(sector_count--){
-//         while((inb(0x1F7)&0x88)!=0x8){}
-
-//         for(int i = 0;i<SECTOR_SIZE/2;i++)
-//         {
-//             *data_buf++=inw(0x1F0);
-//         }
-//     }
-// }
 
 
 static void read_disk(int sector, int sector_count, uint8_t * buf) {
@@ -62,8 +33,8 @@ static void read_disk(int sector, int sector_count, uint8_t * buf) {
 static uint32_t reload_elf(uint8_t* file_buffer)
 {
 	Elf32_Ehdr *elf_hdr = (Elf32_Ehdr *)file_buffer;
-	if((elf_hdr->e_ident[0] != 0x7F)||elf_hdr->e_ident[1]!='E'
-	||elf_hdr->e_ident[2]!='L'||elf_hdr->e_ident[3]!='F'){
+	if((elf_hdr->e_ident[0] != 0x7F)||(elf_hdr->e_ident[1]!='E')
+	||(elf_hdr->e_ident[2]!='L')||(elf_hdr->e_ident[3]!='F')){
 		return 0;
 	}
 
@@ -92,9 +63,9 @@ static uint32_t reload_elf(uint8_t* file_buffer)
 	}
 }
 
-void die(uint8_t a)
+static void die(int a)
 {
-
+	for(;;){}
 }
 void load_kernel(void)
 {   
@@ -105,9 +76,10 @@ void load_kernel(void)
 	uint32_t kernel_entry  = reload_elf((uint8_t*)SYS_KERNEL_LOAD_ADDR);
 	if(kernel_entry==0)
 	{
-		die(2);
+		die(-1);
 	}
 	// ((void (*)(void))  这才是函数的类型 首先第一个void 说明函数的返回类型是void (*)说明是指针  第二个void 是传参
 	// 
     ((void (*)(boot_info_t *))kernel_entry)(&boot_info); 
+	for(;;){}
 }

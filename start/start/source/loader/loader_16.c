@@ -15,12 +15,12 @@ static void show_msg(const char* msg){
 //检测可用的内存块  内存块是连续的  有可能有很多块  结构体中保存了每个块的起始地址和大小
 static void detect_memory(void){
     uint32_t contID = 0;
-    uint32_t signature,bytes;
+    int signature,bytes;
     SMAP_entry_t smap_entry;
     show_msg("try to detect memory:\n\r");
     boot_info.ram_region_count = 0;
     int i = 0;
-    for(i = 0;i<BOOT_ARM_REGION_MAX;i++)
+    for(i = 0;i<BOOT_RAM_REGION_MAX;i++)
     {   
 
         SMAP_entry_t *entry = &smap_entry;
@@ -45,7 +45,7 @@ static void detect_memory(void){
         }
     }
 
-    show_msg("detect ok\n\r");
+    show_msg("detect ok\r\n");
 }
 
 uint16_t gdt_table[][4] = {
@@ -75,7 +75,7 @@ static void enter_protect_mode(void)
 }
 void loader_entry(void)
 {
-    show_msg("loadin\n\rg-------\n\r");
+    show_msg("loading-------\r\n");
 
     detect_memory();
     enter_protect_mode();

@@ -4,12 +4,10 @@
 static segment_desc_t gdt_table[GDT_TABLE_SIZE];  //这是一个数组
 void segment_desc_set(int selector, uint32_t base,uint32_t limit,uint16_t attr)
 {
-    // 这里面并没有偏移量啊
-    int size = sizeof(segment_desc_t);
-    segment_desc_t *desc = gdt_table + selector/sizeof(segment_desc_t);
+    segment_desc_t * desc = gdt_table + (selector >> 3);
 
-    if(limit>0xFFFFF){
-        attr |= SEG_G;
+    if(limit > 0xFFFFF){
+        attr |= 0x8000;
         limit /= 0x1000;   //将limit字段的单位设置为4kb
     }
     desc->limit15_0 = limit & 0xFFFF;
@@ -31,15 +29,15 @@ void init_gdt(void)
 {
     for(int i=0;i<GDT_TABLE_SIZE;i++)
     {
-        segment_desc_set(i*sizeof(segment_desc_t),0,0,0);
+        segment_desc_set(i<<3,0,0,0);
     }
 
 
-    segment_desc_set(KERNEL_SELECTOR_DS,0,0xFFFFFFFF,
-        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_DATA | SRG_TYPE_RW | SEG_D);
+    segment_desc_set(KERNEL_SELECTOR_DS,0x00000000,0xFFFFFFFF,
+        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_DATA | SRG_TYPE_RW | SEG_D |SEG_G);
 
     segment_desc_set(KERNEL_SELECTOR_CS,0,0xFFFFFFFF,
-        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SRG_TYPE_RW | SEG_D);
+        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SRG_TYPE_RW | SEG_D|SEG_G);
 
     lgdt((uint32_t)gdt_table,sizeof(gdt_table));
     // 重新加载gdt表  开启分段内存
