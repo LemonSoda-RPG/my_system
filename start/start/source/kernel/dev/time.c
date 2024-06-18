@@ -5,14 +5,14 @@
 #include "cpu/irq.h"    
 static uint32_t sys_tick;
 
-
+// 当发生计时中断时触发此函数
 void do_handler_time(exception_frame_t*frame){
     sys_tick++;
     irq_send_eoi(IRQ0_TIMER);
 
 }
 
-
+// 初始化可编程间隔定时器（PIT）的，用于定期生成定时器中断
 static void init_pit (void) {
     uint32_t reload_count = PIT_OSC_FREQ / (1000.0 / OS_TICKS_MS);
 

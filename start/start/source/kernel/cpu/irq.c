@@ -7,7 +7,7 @@
 static gate_sesc_t idt_table[IDT_TABLE_NR];
 
 
-
+// 用于初始化8259可编程中断控制器（PIC）
 static void init_pic(void) {
     // 边缘触发，级联，需要配置icw4, 8086模式
     outb(PIC0_ICW1, PIC_ICW1_ALWAYS_1 | PIC_ICW1_ICW4);
@@ -46,7 +46,7 @@ void irq_enable_global(void){
     sti();
 }
 
-
+// 通过irqnum 开启指定中断
 void irq_enable(int irq_num) {
     if (irq_num < IRQ_PIC_START) {
         return;
