@@ -19,8 +19,8 @@ void kernel_init(boot_info_t *boot_info){
 }
 
 // 定义两个结构体来描述进程的运行
-static task_t init_task;
 static task_t first_task;
+static task_t init_task;
 
 
 void init_task_entry(void){
@@ -48,6 +48,7 @@ void init_main(void){
     for(;;)
     {
         log_printf("int main: %d",count++);
+        // 设定一个小程序  能够切换到另一个进程
     }
     init_task_entry();
 
