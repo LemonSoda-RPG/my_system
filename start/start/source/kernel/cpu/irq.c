@@ -3,6 +3,7 @@
 #include "comm/types.h"
 #include "comm/cpu_instr.h"
 #include "os_cfg.h"
+#include "tools/log.h"
 #define IDT_TABLE_NR    128
 static gate_sesc_t idt_table[IDT_TABLE_NR];
 
@@ -126,9 +127,27 @@ int irq_install(int irq_num,irq_handler_t handler)
     return 0;
 }
 
-
+static void dump_core_regs(exception_frame_t*frame){
+    log_printf("IRQ: %d, error code: %d", frame->num,frame->err_code);
+    log_printf("cs:%d  ds:%d  es:%d  ss:%d  fs:%d  gs:%d",
+        frame->cs,frame->ds,frame->es,frame->ds,frame->fs,frame->gs);   
+    log_printf( "eax: 0x%x\n"
+                "ebx: 0x%x\n"
+                "ecx: 0x%x\n"
+                "edx: 0x%x\n"
+                "edi: 0x%x\n"
+                "esi: 0x%x\n" 
+                "ebp: 0x%x\n"
+                "esp: 0x%x\n",
+                frame->eax,frame->ebx,frame->ecx,frame->edi,frame->edi,frame->esi,
+                frame->ebp,frame->esp);
+    log_printf("eip:0x%x\neflags:0x%x\n",frame->eip,frame->eflags);
+}
 
 static void do_deafault_hanlder(exception_frame_t*frame,const char*msg){
+    log_printf("-----------------");
+    log_printf("IRQ/Exception happend:%s",msg);
+    dump_core_regs(frame);
     for(;;){
         hlt();
     }

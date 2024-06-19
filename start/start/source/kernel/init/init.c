@@ -5,23 +5,50 @@
 #include "dev/time.h"
 #include "tools/log.h"
 #include "os_cfg.h"
+#include "tools/klib.h"
+#include "core/task.h"
+
+
 // boot_info 将用于内存的初始化
 void kernel_init(boot_info_t *boot_info){
+    ASSERT(boot_info->ram_region_count!=0);
     cpu_init();   // cpu初始化
     log_init();   // 将log_init放在前面，后面的代码就可以调用来输出错误信息
     irq_init();   // 中断与异常初始化   （同样包括开启中断开关）
     time_init();
 }
 
+// 定义两个结构体来描述进程的运行
+static task_t init_task;
+static task_t first_task;
+
+
+void init_task_entry(void){
+    int count = 0;
+    for(;;)
+    {
+        log_printf("int task:%d",count++);
+    }
+}
+
 void init_main(void){
     log_printf("kernel is running 1111......");
     log_printf("kernel version : %s , %s", OS_VERSION,"hahahah");
-    log_printf("%d %d ",123,-456);
+    log_printf("%d %d %x %c",123,-456,0x80000000,'a');
     // log_printf("%d %d %x %c",123,-456,0x12345,'a');
-    // log_printf("version is %s",OS_VERSION);
+    
 
-    // irq_enable_global();
-    // int a = 3/0;
 
-    for(;;){}
+
+    task_init(&init_task,(uint32_t)init_task_entry,0);
+
+    task_init(&first_task,0,0);
+    
+    int count = 0;
+    for(;;)
+    {
+        log_printf("int main: %d",count++);
+    }
+    init_task_entry();
+
 }

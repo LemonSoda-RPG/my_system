@@ -18,4 +18,15 @@ void kernel_sprintf(char *str_buf,const char* fmt, ... );
 
 void kernel_itoa(char *buf,int num,int N);
 
+#ifndef RELEASE
+
+#define ASSERT(expr)    \
+    if(!(expr)) pannic(__FILE__,__LINE__,__func__,#expr)   // 对expr进行判断
+void pannic(const char*file,int line,const char* func,const char*cond);
+
+#else
+#define ASSERT(expr) ((void)0)
+#endif
+
+
 #endif

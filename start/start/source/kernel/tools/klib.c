@@ -1,4 +1,6 @@
 #include "tools/klib.h"
+#include "tools/log.h"
+#include "comm/cpu_instr.h"
 void kernel_strcpy(char *dest,const char *src){
     if(!dest || !src)
     {
@@ -108,7 +110,7 @@ void kernel_sprintf(char *str_buf,const char* fmt, ... ){
 }
 void kernel_itoa(char *buf,int num,int base)
 {
-
+    
     static const char * num2ch = {
         "0123456789ABCDEF"
     };
@@ -124,11 +126,23 @@ void kernel_itoa(char *buf,int num,int base)
         num*=-1;
         *p++ = '-';
     }
-    do{
-        char ch = num2ch[num % base];
-        *p++ = ch;
-        num = num / base;
-    }while(num);
+    if(base!=16)
+    {
+        do{
+            char ch = num2ch[num % base];
+            *p++ = ch;
+            num = num / base;
+        }while(num);
+    }
+    else{
+        uint32_t unum = (uint32_t)num;
+        do{
+            char ch = num2ch[unum % base];
+            *p++ = ch;
+            unum = unum / base;
+        }while(unum);
+
+    }
     *p-- = '\0';
     char* start = buf;
     while(start<p)
@@ -182,7 +196,8 @@ void kernel_vsprintf(char *str_buf,const char* fmt,va_list args){
                 curr+=kernel_strlen(curr);
             }
             else if(ch=='c'){
-
+                const char ch1 = va_arg(args,int);
+                *curr++ = ch1; 
             }
             else if(ch=='s')
             {   
@@ -198,5 +213,12 @@ void kernel_vsprintf(char *str_buf,const char* fmt,va_list args){
             break;
         }
         
+    }
+}
+void pannic(const char*file,int line,const char* func,const char*cond){
+    log_printf("assert failed! %s",cond);
+    log_printf("file:%s\nline:%d\nfunc:%s\n",file,line,func);
+    for(;;){
+        hlt();
     }
 }
