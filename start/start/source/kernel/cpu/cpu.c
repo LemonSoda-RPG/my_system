@@ -33,11 +33,10 @@ int gdt_alloc_desc(void){
     {
         segment_desc_t *desc = gdt_table+i;
         if(desc->attr == 0){    // == 0 说明这个位置是空的  可以使用
-            return i
-        }
-
-
+            return i*sizeof(segment_desc_t);   // 返回偏移量  以字节为单位
+        } 
     }
+    return -1;
 
 
 }

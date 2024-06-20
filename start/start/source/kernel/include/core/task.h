@@ -6,6 +6,7 @@
 // 用于描述一个进程的运行
 typedef struct _task_t{
     tss_t tss;
+    int tss_sel;
 }task_t;
 
 
