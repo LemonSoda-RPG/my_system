@@ -2,6 +2,10 @@
 #define CPU_H
 
 #include "comm/types.h"
+
+#define EFLAGS_DEFAULT  (1<<1)
+#define EFLAGS_IF       (1<<9)
+
 #pragma pack(1)
 typedef struct _segment_desc_t{
     uint16_t limit15_0;  //16bit
@@ -9,7 +13,7 @@ typedef struct _segment_desc_t{
     uint8_t base23_16;   //8
     uint16_t attr;       //16
     uint8_t base31_24;   //8
-}segment_desc_t;
+}segment_desc_t;   //大小为8个字节
 
 
 
@@ -33,10 +37,15 @@ typedef struct _gate_sesc_t{
 typedef struct _tss_t{
     uint32_t pre_link;
     uint32_t esp0,ss0,esp1,ss1,esp2,ssp2;
+    // 设置虚拟内存时会用到
     uint32_t cr3;
+    // 通用寄存器  因为一个进程在开始之后  这些寄存器会被重新写入 因此不需要进行特定的初始化  写0就行了
     uint32_t eip,eflags,eax,ecx,edx,ebx,esp,ebp,esi,edi;
+    // 我们使用的是平坦结构   写入段选择子   
     uint32_t es,cs,ss,ds,fs,gs;
+    // 暂时用不到
     uint32_t ldt;
+    // 暂时用不到
     uint32_t iomap;
 }tss_t;
 
@@ -55,6 +64,7 @@ typedef struct _tss_t{
 
 #define SEG_TYPE_CODE   (1<<3)
 #define SEG_TYPE_DATA   (0<<3)
+#define SEG_TYPE_TSS    (9<<0)
 
 #define SRG_TYPE_RW     (1<<1)
 
@@ -64,4 +74,7 @@ void gate_desc_set(gate_sesc_t* desc,uint16_t selector, uint32_t offset,uint16_t
 
 void init_gdt(void);
 void cpu_init (void);
+
+
+int gdt_alloc_desc(void);
 #endif

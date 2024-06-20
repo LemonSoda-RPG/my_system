@@ -76,7 +76,7 @@ static inline void far_jump(uint32_t selector,uint32_t offset){
     __asm__ __volatile__("ljmpl *(%[a])"::[a]"r"(addr));
 
 }
-//大改
+//加载idt表
 static inline void lidt(uint32_t start,uint32_t size){
     struct {
         uint16_t limit;
@@ -84,7 +84,6 @@ static inline void lidt(uint32_t start,uint32_t size){
         uint16_t start31_16;
     }idt;
 
-    // 将gdt_table转换为了gdt结构体
     idt.start31_16 = start >> 16;
     idt.start15_0 = start & 0xFFFF;
     idt.limit = size-1;

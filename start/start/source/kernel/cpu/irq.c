@@ -110,6 +110,8 @@ void irq_init(void)
 	irq_install(IRQ19_XM, (irq_handler_t)exception_handler_smd_exception);
 	irq_install(IRQ20_VE, (irq_handler_t)exception_handler_virtual_exception);
     irq_install(IRQ21_CP, (irq_handler_t)exception_handler_control_exception);
+
+
     lidt((uint32_t)idt_table,sizeof(idt_table));
 
 
@@ -122,7 +124,8 @@ int irq_install(int irq_num,irq_handler_t handler)
     if(irq_num >=IDT_TABLE_NR){
         return -1;
     }
-    gate_desc_set(idt_table+irq_num,KERNEL_SELECTOR_CS,(uint32_t)handler,
+    // IRQ_NUM  就是中断号  也就是下标  我们通过这个下标找到gdt选择子  
+    gate_desc_set(idt_t able+irq_num,KERNEL_SELECTOR_CS,(uint32_t)handler,
         GATE_P_PRESENT|GATE_DPL_0|GATE_TYPE_IDT);
     return 0;
 }

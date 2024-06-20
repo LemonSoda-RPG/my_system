@@ -21,7 +21,7 @@ static void init_pit (void) {
     outb(PIT_COMMAND_MODE_PORT, PIT_CHANNEL0 | PIT_LOAD_LOHI | PIT_MODE3);
     outb(PIT_CHANNEL0_DATA_PORT, reload_count & 0xFF);   // 加载低8位
     outb(PIT_CHANNEL0_DATA_PORT, (reload_count >> 8) & 0xFF); // 再加载高8位
-
+    // idt表已经加载了 这时再定义中断处理函数也是可以的
     irq_install(IRQ0_TIMER, (irq_handler_t)exception_handler_time);
     irq_enable(IRQ0_TIMER);
 }

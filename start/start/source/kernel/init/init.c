@@ -21,7 +21,7 @@ void kernel_init(boot_info_t *boot_info){
 // 定义两个结构体来描述进程的运行
 static task_t first_task;
 static task_t init_task;
-
+static uint32_t init_task_stack[1024];
 
 void init_task_entry(void){
     int count = 0;
@@ -39,8 +39,8 @@ void init_main(void){
     
 
 
-
-    task_init(&init_task,(uint32_t)init_task_entry,0);
+    // 最后一个参数 是传入的栈的指针   为什么要传入最后的地址呢  因为在压栈的时候  地址是从大到小增长的 
+    task_init(&init_task,(uint32_t)init_task_entry,(uint32_t)&init_task_stack[1024]);
 
     task_init(&first_task,0,0);
     
@@ -50,6 +50,6 @@ void init_main(void){
         log_printf("int main: %d",count++);
         // 设定一个小程序  能够切换到另一个进程
     }
-    init_task_entry();
+    // init_task_entry();
 
 }
