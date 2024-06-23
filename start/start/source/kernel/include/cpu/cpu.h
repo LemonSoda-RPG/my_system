@@ -4,7 +4,7 @@
 #include "comm/types.h"
 
 #define EFLAGS_DEFAULT  (1<<1)
-#define EFLAGS_IF       (1<<9)
+#define EFLAGS_IF       (1<<9)  //
 
 #pragma pack(1)
 typedef struct _segment_desc_t{
@@ -25,7 +25,7 @@ typedef struct _gate_sesc_t{
     uint16_t offset31_16;
 }gate_sesc_t;
 
-#define GATE_TYPE_IDT   (0xE<<8)
+#define GATE_TYPE_IDT   (0xE << 8)
 #define GATE_P_PRESENT  (1<<15)
 #define GATE_DPL_0      (0<<13)
 #define GATE_DPL_3      (3<<13)
@@ -36,7 +36,7 @@ typedef struct _gate_sesc_t{
 // 主要包括保存任务的上下文（CPU寄存器状态）和切换任务的堆栈指针。
 typedef struct _tss_t{
     uint32_t pre_link;
-    uint32_t esp0,ss0,esp1,ss1,esp2,ssp2;
+    uint32_t esp0,ss0,esp1,ss1,esp2,ss2;
     // 设置虚拟内存时会用到
     uint32_t cr3;
     // 通用寄存器  因为一个进程在开始之后  这些寄存器会被重新写入 因此不需要进行特定的初始化  写0就行了
@@ -66,7 +66,7 @@ typedef struct _tss_t{
 #define SEG_TYPE_DATA   (0<<3)
 #define SEG_TYPE_TSS    (9<<0)
 
-#define SRG_TYPE_RW     (1<<1)
+#define SEG_TYPE_RW     (1<<1)
 
 
 void segment_desc_set(int selector, uint32_t base,uint32_t limit,uint16_t attr);
@@ -77,4 +77,5 @@ void cpu_init (void);
 
 
 int gdt_alloc_desc(void);
+void swith_to_tss(uint32_t tss_sel);
 #endif

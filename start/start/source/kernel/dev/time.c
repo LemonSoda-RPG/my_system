@@ -8,13 +8,14 @@ static uint32_t sys_tick;
 // 当发生计时中断时触发此函数
 void do_handler_time(exception_frame_t*frame){
     sys_tick++;
-    irq_send_eoi(IRQ0_TIMER);  //  如果不发送结束命令  会一直卡在这个中断
+    pic_send_eoi(IRQ0_TIMER);  //  如果不发送结束命令  会一直卡在这个中断
 
 }
 
 // 初始化可编程间隔定时器（PIT）的，用于定期生成定时器中断
 static void init_pit (void) {
-    uint32_t reload_count = PIT_OSC_FREQ / (1000.0 / OS_TICKS_MS);
+    uint32_t reload_count = (PIT_OSC_FREQ) / (1000.0 / OS_TICKS_MS);
+    // uint32_t reload_count = 0xFFFF;
 
     // 2023-3-18 写错了，应该是模式3或者模式2    配置定时器  一旦定时器配置完成，无论中断是否打开 定时器都会按照配置运行
     //outb(PIT_COMMAND_MODE_PORT, PIT_CHANNLE0 | PIT_LOAD_LOHI | PIT_MODE0);

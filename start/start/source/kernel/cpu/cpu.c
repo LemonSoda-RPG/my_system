@@ -38,8 +38,13 @@ int gdt_alloc_desc(void){
     }
     return -1;
 
-
 }
+
+void swith_to_tss(uint32_t tss_sel){
+
+    far_jump(tss_sel,0);   // far_jump 之后  taskregister怎么办
+}
+
 
 
 
@@ -52,10 +57,10 @@ void init_gdt(void)
 
 
     segment_desc_set(KERNEL_SELECTOR_DS,0x00000000,0xFFFFFFFF,
-        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_DATA | SRG_TYPE_RW | SEG_D |SEG_G);
+        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_DATA | SEG_TYPE_RW | SEG_D |SEG_G);
 
     segment_desc_set(KERNEL_SELECTOR_CS,0,0xFFFFFFFF,
-        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SRG_TYPE_RW | SEG_D|SEG_G);
+        SEG_P_PRESENT | SEG_DPL0 | SEG_S_NORMAL | SEG_TYPE_CODE | SEG_TYPE_RW | SEG_D|SEG_G);
 
     lgdt((uint32_t)gdt_table,sizeof(gdt_table));
     // 重新加载gdt表  开启分段内存

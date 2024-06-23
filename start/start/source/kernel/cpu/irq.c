@@ -125,7 +125,7 @@ int irq_install(int irq_num,irq_handler_t handler)
         return -1;
     }
     // IRQ_NUM  就是中断号  也就是下标  我们通过这个下标找到gdt选择子  
-    gate_desc_set(idt_t able+irq_num,KERNEL_SELECTOR_CS,(uint32_t)handler,
+    gate_desc_set(idt_table+irq_num,KERNEL_SELECTOR_CS,(uint32_t)handler,
         GATE_P_PRESENT|GATE_DPL_0|GATE_TYPE_IDT);
     return 0;
 }
@@ -225,7 +225,7 @@ void do_handler_control_exception(exception_frame_t*frame){
 }
 
 
-void irq_send_eoi(int irq_num){
+void pic_send_eoi(int irq_num){
     irq_num -= IRQ_PIC_START;
     if(irq_num >= 8)
     {

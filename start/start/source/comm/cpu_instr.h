@@ -37,7 +37,7 @@ static inline uint16_t inw(uint16_t port){
 
 static inline void outb(uint16_t port,uint8_t data){
     //outb  al, bx
-    __asm__ __volatile__("outb %[v], %[p]"::[p]"d"(port),[v]"a"(data));
+    __asm__ __volatile__("outb %[v], %[p]": :[p]"d"(port),[v]"a"(data));
 }
 
 static inline void lgdt(uint32_t start,uint32_t size){
@@ -92,5 +92,9 @@ static inline void lidt(uint32_t start,uint32_t size){
 
 static inline void hlt(void){
     __asm__ __volatile__("hlt");
+}
+
+static inline void write_tr (uint32_t tss_selector) {
+    __asm__ __volatile__("ltr %%ax"::"a"(tss_selector));
 }
 #endif

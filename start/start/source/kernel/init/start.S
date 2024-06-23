@@ -91,3 +91,41 @@ exception_handler control_exception, 21, 1
 
 exception_handler time, 0x20, 0
 
+// simple_switch(&from,to)
+    .text
+    .global simple_switch
+simple_switch:
+//整个过程应该是 将寄存器压到当前任务的栈里面  然后切换到另一个任务  再从另一个任务的栈里面取出所需的寄存器
+
+// 取出传参   调用函数传参是从右到左压栈  所以最右的参数先压入  地址最大
+// from
+    mov 4(%esp), %eax
+// to 
+    mov 8(%esp), %edx
+
+
+// 将寄存器压入到当前任务的栈
+    push %ebp
+    push %ebx
+    push %esi
+    push %edi
+    
+// 保存这个栈的指针
+    mov %esp, (%eax)
+
+/*
+    mov %esp, %eax      将 %esp 的值复制到 %eax 寄存器。
+    mov %esp, (%eax)    将 %esp 的值存储到 %eax 指定的内存地址。
+*/
+
+
+// 这里进行任务的切换  既然要切任务  那就得知道下一个任务的栈的位置  因此需要传参
+    mov %edx, %esp
+    
+// 切换之后 将当前栈中的寄存器弹出
+    pop %edi
+    pop %esi
+    pop %ebx
+    pop %ebp
+    ret
+
