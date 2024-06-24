@@ -19,6 +19,7 @@
         "irq.h": "c",
         "time.h": "c",
         "log.h": "c",
-        "klib.h": "c"
+        "klib.h": "c",
+        "list.h": "c"
     },
 }

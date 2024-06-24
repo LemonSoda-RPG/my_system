@@ -2,11 +2,16 @@
 #include "tools/klib.h"
 #include "cpu/cpu.h"
 #include "tools/log.h"
+#include "comm/cpu_instr.h"
 extern void simple_switch(uint32_t **from,uint32_t *to);
 
+
+
+static task_manager_t task_manager;
+
 void task_switch_from_to(task_t *from,task_t *to){
-    // swith_to_tss(to->tss_sel);
-    simple_switch(&from->stack,to->stack);
+    swith_to_tss(to->tss_sel);
+    // simple_switch(&from->stack,to->stack);
 }
 
 
@@ -44,23 +49,28 @@ static int tss_init(task_t *task, uint32_t entry, uint32_t esp){
 
 //    task状态信息结构体       entry 入口？是函数的名字       esp指针
 int task_init(task_t *task,uint32_t entry,uint32_t esp){
-    
     ASSERT(task != (task_t*)0);   //task  不为空
-    // tss_init(task,entry,esp);
-
-    uint32_t * pesp = (uint32_t*) esp;
-    if(pesp){
-        *(--pesp) = entry;
-        *(--pesp) = 0;
-        *(--pesp) = 0;
-        *(--pesp) = 0;
-        *(--pesp) = 0;
-        task->stack = pesp;
-    }
-
-
-
-
+    tss_init(task,entry,esp);
     return 0;
+}
 
+void task_manager_init(void){
+    list_init(&task_manager.ready_list);
+    list_init(&task_manager.task_list);
+    task_manager.curr_task = (task_t*)0;
+}
+
+void task_first_init(void){
+    task_t *first_task = task_first_task();
+    task_init(first_task,0,0);
+
+    // 写入的是gdt表当中的下标
+    write_tr(first_task->tss_sel);
+    task_manager.curr_task = first_task;
+
+}
+
+
+task_t * task_first_task(void){
+    return &task_manager.first_task;
 }
