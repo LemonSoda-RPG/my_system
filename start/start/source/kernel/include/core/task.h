@@ -35,7 +35,7 @@ typedef struct _task_manager_t{
     list_t task_list;    // 进程队列  保存所有已经创建的进程
     list_t sleep_list;   // 睡眠队列
     task_t first_task;
-    task_t idle_task;
+    task_t idle_task;   // 空闲任务只会加入到all_node队列  
 }task_manager_t;
 
 

@@ -113,7 +113,7 @@ void task_set_ready(task_t *task){
     
 }
 void task_set_block(task_t *task){
-    if(task==&task_manager.idle_task){
+    if(task==&task_manager.idle_task){   // 如果是空闲进程  直接返回，因为他不属于任何队列
         return;
     }
     list_node_remove(&task_manager.ready_list,&task->run_node);
@@ -154,10 +154,11 @@ int sys_sched_yield(void){
     return 0;
 
 }
-
+// 如果当前运行的是空闲进程，而且就绪队列此时还是空的
+// 那么接下来还是运行空闲进程
 void task_dispatch(void){   // 这个函数规定了不同的切换机制
     irq_state_t old_state = irq_enter_proctection();
- 
+    
     task_t *to = task_next_run();
     task_t *from = task_current();
     if(to!=from){
@@ -180,6 +181,7 @@ void task_time_tick(void){
         task_set_block(task_curr);
         task_set_ready(task_curr);
         task_dispatch();
+        // 这里如果满足条件就直接跳走了  不会再执行下面的代码
     }
 
     list_node_t *sleep_curr = list_first(&task_manager.sleep_list);
@@ -192,6 +194,8 @@ void task_time_tick(void){
         }
         sleep_curr = next;
     }
+    // 这里的意思是  只要我有任务从延迟队列插入到就绪队列了  就执行一次任务切换
+    // 不对  这里没有对队列进行出队操作，所以假如原本就有任务再执行，那么队首任务与当前执行的任务就是同一个，因此不会切换
     task_dispatch();
 }
 
