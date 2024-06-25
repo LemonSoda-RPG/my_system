@@ -2,6 +2,7 @@
 #define CPU_INSTR_H
 
 #include "comm/types.h"
+#include "cpu/irq.h"
 
 
 
@@ -96,5 +97,14 @@ static inline void hlt(void){
 
 static inline void write_tr (uint32_t tss_selector) {
     __asm__ __volatile__("ltr %%ax"::"a"(tss_selector));
+}
+
+static inline irq_state_t read_eflags(){
+    uint32_t eflags;
+    __asm__ __volatile__("pushf\n\tpop %%eax":"=a"(eflags));
+    return eflags;
+}
+static inline void write_eflags(irq_state_t eflags){
+    __asm__ __volatile__("push %%eax\n\tpopf"::"a"(eflags));
 }
 #endif

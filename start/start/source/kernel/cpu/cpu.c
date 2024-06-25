@@ -29,13 +29,17 @@ void gate_desc_set(gate_sesc_t* desc,uint16_t selector, uint32_t offset,uint16_t
  
 // 遍历gdt表  查询空余位置
 int gdt_alloc_desc(void){
+
+    irq_state_t old_state = irq_enter_proctection();
     for(int i = 1;i<GDT_TABLE_SIZE;i++)
     {
         segment_desc_t *desc = gdt_table+i;
         if(desc->attr == 0){    // == 0 说明这个位置是空的  可以使用
+            irq_leave_proctection(old_state);
             return i*sizeof(segment_desc_t);   // 返回偏移量  以字节为单位
         } 
     }
+    irq_leave_proctection(old_state);
     return -1;
 
 }

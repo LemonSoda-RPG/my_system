@@ -49,7 +49,7 @@ gdt_reload:
         push %fs
         push %gs
         
-        push %esp
+        push %esp     // frame的指针
         call do_handler_\name
         add $(1*4),%esp
 
@@ -59,7 +59,7 @@ gdt_reload:
         pop %ds
         popal
         
-        add $(2*4),%esp
+        add $(2*4),%esp      //跳过err_code和num
         iret 
 .endm
 

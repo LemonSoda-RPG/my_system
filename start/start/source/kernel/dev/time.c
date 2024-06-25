@@ -3,13 +3,14 @@
 #include "comm/cpu_instr.h"
 #include "os_cfg.h"
 #include "cpu/irq.h"    
+#include "core/task.h"
 static uint32_t sys_tick;
 
 // 当发生计时中断时触发此函数
 void do_handler_time(exception_frame_t*frame){
     sys_tick++;
     pic_send_eoi(IRQ0_TIMER);  //  如果不发送结束命令  会一直卡在这个中断
-
+    task_time_tick();
 }
 
 // 初始化可编程间隔定时器（PIT）的，用于定期生成定时器中断
@@ -27,9 +28,11 @@ static void init_pit (void) {
     irq_enable(IRQ0_TIMER);
 }
 
-
 void time_init(void){
     sys_tick = 0;
     init_pit();
 }
+
+
+
 

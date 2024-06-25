@@ -31,11 +31,9 @@ void init_task_entry(void){
     int count = 0;
     for(;;)
     {   
-        // for(;;){};
         log_printf("init task:%d",count++);
-        // task_switch_from_to(&init_task,task_first_task());
+        sys_sleep(1000);
 
-        sys_sched_yield();
     }
 }
 
@@ -52,15 +50,16 @@ void init_main(void){
     task_init(&init_task,"init_task",(uint32_t)init_task_entry,(uint32_t)&init_task_stack[1024]);
     
     
-    
+    irq_enable_global();
     int count = 0;
     for(;;)
     {
         
         log_printf("init main: %d",count++);
+        sys_sleep(1000);
         // 设定一个小程序  能够切换到另一个进程
         // task_switch_from_to(task_first_task(),&init_task);
-        sys_sched_yield();
+        // sys_sched_yield();
     }
     // init_task_entry();
 

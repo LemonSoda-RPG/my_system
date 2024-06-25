@@ -4,7 +4,8 @@
 #include "tools/log.h"
 #include "comm/cpu_instr.h"
 #include "tools/list.h"
-
+#include "cpu/irq.h"
+static uint32_t idle_task_stack[IDLE_STACK_SIZE];
 extern void simple_switch(uint32_t **from,uint32_t *to);
 
 
@@ -55,23 +56,33 @@ int task_init(task_t *task,const char*name,uint32_t entry,uint32_t esp){
 
     kernel_strncpy(task->name,name,TASK_NAME_SIZE);
     task->state = TASK_CREATED;
-
-
+    task->slice_ticks = TASK_TIME_SLICE_DEFAULT;
+    task->time_ticks = task->slice_ticks;
+    task->sleep_ticks = 0;
     list_node_init(&task->all_node);  // 初始化节点
     list_node_init(&task->run_node);
 
+    irq_state_t old_state = irq_enter_proctection();
     task_set_ready(task);
     list_insert_last(&task_manager.task_list,&task->all_node);
-    // list_insert_last(&task_manager.task_list,&task->all_node);
-
-
+    irq_leave_proctection(old_state);
     return 0;
 }
+static void idle_task_entry(void){
+    for(;;){
+        hlt();
+    }
+}
+
 
 void task_manager_init(void){
     list_init(&task_manager.ready_list);
     list_init(&task_manager.task_list);
+    list_init(&task_manager.sleep_list);
     task_manager.curr_task = (task_t*)0;
+
+    // 初始化idle任务
+    task_init(&task_manager.idle_task,"idle_task",(uint32_t)idle_task_entry,(uint32_t)(idle_task_stack+IDLE_STACK_SIZE));
 }
 
 
@@ -93,11 +104,18 @@ task_t * task_first_task(void){
 }
 
 void task_set_ready(task_t *task){
+    // 如果是空闲进程 直接返回
+    if(task==&task_manager.idle_task){
+        return;
+    }
     list_insert_last(&task_manager.ready_list,&task->run_node);
     task->state = TASK_READY;
     
 }
 void task_set_block(task_t *task){
+    if(task==&task_manager.idle_task){
+        return;
+    }
     list_node_remove(&task_manager.ready_list,&task->run_node);
 }
 
@@ -105,6 +123,10 @@ void task_set_block(task_t *task){
 
 // 获取当前运行任务的结构所在位置
 task_t * task_next_run(void){  
+    // 当调用队列的节点时 发现是空的
+    if(list_count(&task_manager.ready_list)==0){
+        return &task_manager.idle_task;
+    }
     list_node_t *task_node = list_first(&task_manager.ready_list);
     return list_node_parent(task_node,task_t,run_node);
 
@@ -114,8 +136,10 @@ task_t * task_current(void){
     return task_manager.curr_task;
 
 }
-
+// 手动切换任务
 int sys_sched_yield(void){
+    irq_state_t old_state = irq_enter_proctection();
+
     // 判断当前就绪队列还有没有别的任务 如果没有  那就没必要进行切换了
     if(list_count(&task_manager.ready_list)>1){
         task_t *curr_task = task_current();   // 查看当前正在运行的任务是哪一个
@@ -124,13 +148,16 @@ int sys_sched_yield(void){
         // 再次添加到队列的尾部
         task_set_ready(curr_task);
         //任务切换
-        task_dispath();
+        task_dispatch();
     }
+    irq_leave_proctection(old_state);
     return 0;
 
 }
 
-void task_dispath(void){   // 这个函数规定了不同的切换机制
+void task_dispatch(void){   // 这个函数规定了不同的切换机制
+    irq_state_t old_state = irq_enter_proctection();
+ 
     task_t *to = task_next_run();
     task_t *from = task_current();
     if(to!=from){
@@ -140,5 +167,59 @@ void task_dispath(void){   // 这个函数规定了不同的切换机制
         to->state = TASK_RUNNING;
         task_switch_from_to(from,to);
     }
+    irq_leave_proctection(old_state);
+
+}
+
+// 根据时间片自动切换
+void task_time_tick(void){
+    task_t* task_curr = task_current();
+    if(--(task_curr->slice_ticks) == 0)
+    {   
+        task_curr->slice_ticks = task_curr->time_ticks;
+        task_set_block(task_curr);
+        task_set_ready(task_curr);
+        task_dispatch();
+    }
+
+    list_node_t *sleep_curr = list_first(&task_manager.sleep_list);
+    while(sleep_curr){
+        list_node_t *next = list_node_next(sleep_curr);
+        task_t *curr_task = list_node_parent(sleep_curr,task_t,run_node);
+        if(--curr_task->sleep_ticks==0){
+            task_set_wakeup(curr_task);
+            task_set_ready(curr_task);
+        }
+        sleep_curr = next;
+    }
+    task_dispatch();
+}
+
+void task_set_sleep(task_t *task,uint32_t ticks){
+    if(ticks==0)
+    {
+        return;
+    }
+    task->sleep_ticks = ticks;
+    task->state = TASK_SLEEP;
+    list_insert_last(&task_manager.sleep_list,&task->run_node);
+
+}
+void task_set_wakeup(task_t *task){
+    list_node_remove(&task_manager.sleep_list,&task->run_node);
+}
+
+void sys_sleep(uint32_t ms){
+    irq_state_t old_state = irq_enter_proctection();
+
+    task_set_block(task_manager.curr_task);
+    
+    task_set_sleep(task_manager.curr_task,(ms+(OS_TICKS_MS-1))/OS_TICKS_MS);
+
+    task_dispatch();
+
+
+
+    irq_leave_proctection(old_state);
 
 }

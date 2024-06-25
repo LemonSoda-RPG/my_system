@@ -2,6 +2,7 @@
 #include "comm/cpu_instr.h"
 #include <stdarg.h>
 #include <tools/klib.h>
+#include "cpu/irq.h"
 #define     COM1_PORT       0X3F8
 void log_init(void){
 
@@ -25,6 +26,9 @@ void log_printf(const char* fmt, ...){
     va_start(args,fmt);   // 将fmt后面的可变参数 保存到args中
     kernel_vsprintf(str_buf,fmt,args);
     va_end(args);
+
+
+    irq_state_t old_state = irq_enter_proctection();  // 返回之前的中断状态
     // inb读取
     const char *p = str_buf;
     while(*p != '\0'){
@@ -35,4 +39,7 @@ void log_printf(const char* fmt, ...){
 
     outb(COM1_PORT,'\r');
     outb(COM1_PORT,'\n');
+
+    irq_leave_proctection(old_state);
 }
+

@@ -135,6 +135,12 @@ void irq_enable_global(void);
 void irq_enable(int irq_num);
 void irq_disable(int irq_num);
 
-
+// 发送中断处理完毕信号
 void pic_send_eoi(int irq_num);
+
+
+
+typedef uint32_t irq_state_t;
+irq_state_t irq_enter_proctection(void);
+void irq_leave_proctection(irq_state_t state);
 #endif
