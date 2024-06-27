@@ -3,9 +3,11 @@
 #include <stdarg.h>
 #include <tools/klib.h>
 #include "cpu/irq.h"
+#include "ipc/mutex.h"
 #define     COM1_PORT       0X3F8
+static mutex_t mutex;
 void log_init(void){
-
+    mutex_init(&mutex);
     //outb  写入
     outb(COM1_PORT + 1, 0x00);  //关闭这个串行接口内部的所有中断
     outb(COM1_PORT + 3, 0x80);
@@ -27,8 +29,7 @@ void log_printf(const char* fmt, ...){
     kernel_vsprintf(str_buf,fmt,args);
     va_end(args);
 
-
-    irq_state_t old_state = irq_enter_proctection();  // 返回之前的中断状态
+    mutex_lock(&mutex);
     // inb读取
     const char *p = str_buf;
     while(*p != '\0'){
@@ -39,7 +40,7 @@ void log_printf(const char* fmt, ...){
 
     outb(COM1_PORT,'\r');
     outb(COM1_PORT,'\n');
+    mutex_unlock(&mutex);
 
-    irq_leave_proctection(old_state);
 }
 

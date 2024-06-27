@@ -63,13 +63,16 @@ int task_init(task_t *task,const char*name,uint32_t entry,uint32_t esp){
     list_node_init(&task->run_node);
 
     irq_state_t old_state = irq_enter_proctection();
-    task_set_ready(task);
-    list_insert_last(&task_manager.task_list,&task->all_node);
+    // 这是添加到就绪队列
+    task_set_ready(task);  
+    // 添加到所有队列
+    list_insert_last(&task_manager.task_list,&task->all_node);   
     irq_leave_proctection(old_state);
     return 0;
 }
 static void idle_task_entry(void){
     for(;;){
+        
         hlt();
     }
 }
@@ -175,6 +178,7 @@ void task_dispatch(void){   // 这个函数规定了不同的切换机制
 // 根据时间片自动切换
 void task_time_tick(void){
     task_t* task_curr = task_current();
+    // 检查时间片
     if(--(task_curr->slice_ticks) == 0)
     {   
         task_curr->slice_ticks = task_curr->time_ticks;
@@ -183,7 +187,7 @@ void task_time_tick(void){
         task_dispatch();
         // 这里如果满足条件就直接跳走了  不会再执行下面的代码
     }
-
+    // 检查延时函数   对延时队列进行遍历  如果有任务倒计时结束  就重新放回任务队列
     list_node_t *sleep_curr = list_first(&task_manager.sleep_list);
     while(sleep_curr){
         list_node_t *next = list_node_next(sleep_curr);

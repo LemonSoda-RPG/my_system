@@ -1,7 +1,9 @@
 #include "cpu/cpu.h"
 #include "os_cfg.h"
 #include "comm/cpu_instr.h"
+#include "ipc/mutex.h"
 static segment_desc_t gdt_table[GDT_TABLE_SIZE];  //这是一个数组
+static mutex_t mutex;
 void segment_desc_set(int selector, uint32_t base,uint32_t limit,uint16_t attr)
 {
     // 这里为什么要偏移3呢   这是因为segment_desc_t结构体的大小为8个字节的大小    
@@ -30,16 +32,16 @@ void gate_desc_set(gate_sesc_t* desc,uint16_t selector, uint32_t offset,uint16_t
 // 遍历gdt表  查询空余位置
 int gdt_alloc_desc(void){
 
-    irq_state_t old_state = irq_enter_proctection();
+    mutex_lock(&mutex);
     for(int i = 1;i<GDT_TABLE_SIZE;i++)
     {
         segment_desc_t *desc = gdt_table+i;
         if(desc->attr == 0){    // == 0 说明这个位置是空的  可以使用
-            irq_leave_proctection(old_state);
+            mutex_unlock(&mutex);
             return i*sizeof(segment_desc_t);   // 返回偏移量  以字节为单位
         } 
     }
-    irq_leave_proctection(old_state);
+    mutex_unlock(&mutex);
     return -1;
 
 }
@@ -73,5 +75,6 @@ void init_gdt(void)
 }
 
 void cpu_init (void){
+    mutex_init(&mutex);
     init_gdt();
 }

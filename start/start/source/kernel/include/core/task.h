@@ -25,6 +25,8 @@ typedef struct _task_t{
     char name[TASK_NAME_SIZE];
     list_node_t run_node;   //  存放到就绪队列
     list_node_t all_node;   // 存放到task队列
+    list_node_t wait_node;   // 存放到等待队列
+
     tss_t tss;
     int tss_sel;
 }task_t;
