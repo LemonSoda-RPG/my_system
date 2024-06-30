@@ -53,10 +53,11 @@ int bitmap_byte_count(int bitcount){
         return bitcount/8;
 }
 
-
-void bitmap_init(bitmap_t *bitmap,uint8_t *bits,int init_bit){
-    bitmap->bit_count = 0;
+// bitcount 有效的页数
+void bitmap_init(bitmap_t *bitmap,uint8_t *bits,int bit_count,int init_bit){
+    bitmap->bit_count = bit_count;
     bitmap->bits = bits;
+    // 计算位图结构体占用的内存大小
     int bytes = bitmap_byte_count(bitmap->bit_count);
     kernel_memset(bits,init_bit ? 0xFF:0,bytes);    
 }

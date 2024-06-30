@@ -18,4 +18,6 @@ SECTIONS{
     .bss : {
         *(.bss)
     }
+
+    PROVIDE(mem_free_start = .);
 }

@@ -21,6 +21,8 @@
         "log.h": "c",
         "klib.h": "c",
         "list.h": "c",
-        "bitmap.h": "c"
+        "bitmap.h": "c",
+        "memory.h": "c",
+        "mutex.h": "c"
     },
 }

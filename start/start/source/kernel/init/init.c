@@ -10,6 +10,7 @@
 #include "comm/cpu_instr.h"
 #include "tools/list.h"
 #include "ipc/sem.h"
+#include "core/memory.h"
 // 定义两个结构体来描述进程的运行
 // static task_t first_task;
 static task_t init_task;
@@ -22,6 +23,8 @@ void kernel_init(boot_info_t *boot_info){
 
     ASSERT(boot_info->ram_region_count!=0);   
     cpu_init();   // cpu初始化
+
+    memory_init(boot_info);
     log_init();   // 将log_init放在前面，后面的代码就可以调用来输出错误信息
     irq_init();   // 中断与异常初始化   （同样包括开启中断开关）
     time_init();
