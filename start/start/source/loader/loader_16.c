@@ -77,7 +77,9 @@ void loader_entry(void)
 {
     show_msg("loading-------\r\n");
 
+    // 从boot跳到loader之后  首先进行的就是内存检测
     detect_memory();
+    // 从实模式进入到保护模式   开启32位内存
     enter_protect_mode();
     for(;;)
     {

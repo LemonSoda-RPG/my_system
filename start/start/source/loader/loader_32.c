@@ -67,6 +67,28 @@ static void die(int a)
 {
 	for(;;){}
 }
+
+#define CR4_PSE		(1<<4)
+#define CR0_PG		(1<<31)
+#define PDE_P		(1<<0)
+#define PDE_W		(1<<1)
+#define PDE_PS		(1<<7)
+
+
+void enable_page_mode(){
+	static uint32_t page_dir[1024] __attribute__((aligned(4096))) = {
+		[0] = PDE_P | PDE_W | PDE_PS 
+	};   //  进行4k对齐 每页是4MB   那么1024页就是4G
+
+	uint32_t cr4 = read_cr4();
+	write_cr4(cr4|CR4_PSE);
+
+	// uint32_t cr3 = read_cr3();
+	write_cr3((uint32_t)page_dir);
+
+	write_cr0(read_cr0()|CR0_PG);
+
+}
 void load_kernel(void)
 {   
     // SYS_KERNEL_LOAD_ADDR 写入内存的位置 从第100扇区读取
@@ -78,6 +100,10 @@ void load_kernel(void)
 	{
 		die(-1);
 	}
+
+
+	enable_page_mode();
+
 	// ((void (*)(void))  这才是函数的类型 首先第一个void 说明函数的返回类型是void (*)说明是指针  第二个void 是传参
 	// 
     ((void (*)(boot_info_t *))kernel_entry)(&boot_info); 

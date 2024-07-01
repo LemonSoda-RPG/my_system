@@ -1,9 +1,6 @@
 #include "core/memory.h"
 #include "tools/log.h"
 
-
-
-
 static addr_alloc_t paddr_alloc;
 // size 空闲内存的总大小
 static void addr_alloc_init(addr_alloc_t* alloc,uint8_t* bits,
@@ -53,16 +50,42 @@ static uint32_t total_mem_size(boot_info_t *boot_info){
     }
     return mem_size;
 }
+void create_kernel_table(){
+    extern uint8_t s_text[],e_text[],s_data[],e_data[];
+    extern uint8_t kernel_base[];
+    static memory_map_t kernel_map[] = {
+        {kernel_base,s_text,kernel_base,0},
+        {s_text,e_text,s_text,0},
+        {s_data,(void*)MEM_EBDA_START,s_data,0}
+    };
+
+    // 对表进行遍历  配置页表属性
+    for(int i =0;i<sizeof(kernel_map)/sizeof(memory_map_t);i++){
+        memory_map_t *map = kernel_map+i;
+
+        uint32_t vstart = down2((uint32_t)map->vstart,MEM_PAGE_SIZE);
+        uint32_t vend = up2((uint32_t)map->vend,MEM_PAGE_SIZE);
+        int page_count = (vend - vstart) / MEM_PAGE_SIZE;
+
+    }
+
+
+
+
+
+}
+
 void memory_init(boot_info_t *boot_info){
-    extern uint8_t * mem_free_start;
+    extern uint8_t * mem_free_start;   //内核代码的结束地址
     // 对内存进行初始化
     log_printf("mem init");
-    show_mem_info(boot_info);
+    show_mem_info(boot_info);    // 打印空闲内存的信息
      
-    //? 这里为什么是 8位 不是32位呢   我就用32位试试
+    // 这个是指针  指向位图的起始内存地址   因为我们要将位图放到kernel的后面
     uint8_t * mem_free =(uint8_t *)& mem_free_start;  // kernel之后的地址  也是位图的起始地址
 
-
+    // 这里我不明白   视频中说使用1M以上的空间给进程  但是这里的物理地址不是1M啊
+    // 还是说 我们将空闲内存重新排序 ？ 
     uint32_t mem_up1MB_free = total_mem_size(boot_info) - MEM_EXT_START;
     // 将内存转化为pagesize的整数倍
     mem_up1MB_free = down2(mem_up1MB_free,MEM_PAGE_SIZE);
@@ -74,4 +97,5 @@ void memory_init(boot_info_t *boot_info){
     mem_free += bitmap_byte_count(mem_up1MB_free/MEM_PAGE_SIZE);   
     
 
+    create_kernel_table();
 }
