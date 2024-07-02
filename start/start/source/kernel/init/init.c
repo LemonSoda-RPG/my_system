@@ -20,7 +20,8 @@ static uint32_t init_task_stack[1024];
 static sem_t sem;
 // boot_info 将用于内存的初始化
 void kernel_init(boot_info_t *boot_info){
-
+    extern uint8_t * mem_free_start;
+    
     ASSERT(boot_info->ram_region_count!=0);   
     cpu_init();   // cpu初始化
 

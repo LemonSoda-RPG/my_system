@@ -6,7 +6,7 @@
 #include "tools/list.h"
 #define TASK_NAME_SIZE 32
 #define TASK_TIME_SLICE_DEFAULT 10
-#define IDLE_STACK_SIZE 64
+#define IDLE_STACK_SIZE 1024
 // 用于描述一个进程的运行
 typedef struct _task_t{
 // 设置当前任务状态

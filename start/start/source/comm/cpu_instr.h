@@ -56,7 +56,7 @@ static inline void lgdt(uint32_t start,uint32_t size){
 }
 
 //读取cr0
-static inline uint16_t read_cr0(void){
+static inline uint32_t read_cr0(void){
     uint32_t cr0;
     __asm__ __volatile__("mov %%cr0,%[v]":[v]"=r"(cr0));
     return cr0;
@@ -70,7 +70,7 @@ static inline void write_cr0(uint32_t v){
 
 }
 
-static inline uint16_t read_cr3(void){
+static inline uint32_t read_cr3(void){
     uint32_t cr3;
     __asm__ __volatile__("mov %%cr3,%[v]":[v]"=r"(cr3));
     return cr3;
@@ -83,7 +83,7 @@ static inline void write_cr3(uint32_t v){
 }
 
 
-static inline uint16_t read_cr4(void){
+static inline uint32_t read_cr4(void){
     uint32_t cr4;
     __asm__ __volatile__("mov %%cr4,%[v]":[v]"=r"(cr4));
     return cr4;
@@ -99,6 +99,8 @@ static inline void far_jump(uint32_t selector,uint32_t offset){
     
     uint32_t addr[] = {offset,selector};
     __asm__ __volatile__("ljmpl *(%[a])"::[a]"r"(addr));
+
+    // 在执行跳转时   会将tss信息保存到指定的地址中 这个地址就是我们的tss段
 
 }
 //加载idt表
@@ -125,10 +127,10 @@ static inline void write_tr (uint32_t tss_selector) {
 
 static inline irq_state_t read_eflags(){
     uint32_t eflags;
-    __asm__ __volatile__("pushf\n\tpop %%eax":"=a"(eflags));
+    __asm__ __volatile__("pushf\n\tpopl %%eax":"=a"(eflags));
     return eflags;
 }
 static inline void write_eflags(irq_state_t eflags){
-    __asm__ __volatile__("push %%eax\n\tpopf"::"a"(eflags));
+    __asm__ __volatile__("push %%eax\n\tpopfl"::"a"(eflags));
 }
 #endif

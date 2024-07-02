@@ -2,7 +2,8 @@
 #define MEMORY_H
 #include "comm/types.h"
 #include "tools/bitmap.h"
-
+#include "cpu/mmu.h"
+#include "tools/log.h"
 #include "ipc/mutex.h"
 #include "comm/boot_info.h"
 #include "tools/klib.h"
@@ -25,12 +26,11 @@ typedef struct _memory_map_t
     void *vend;     // 虚拟内存结束
     void *pstart;   // 映射的物理地址
     uint32_t perm;  // 空间权限
-        /* data */
 }memory_map_t;
 
-
-
-
+int memory_create_map(pde_t *page_dir,uint32_t vaddr,uint32_t paddr,int count,uint32_t perm);
+void create_kernel_table();
+pte_t * find_pte(pde_t *page_dir,uint32_t vaddr,uint32_t alloc);
 void memory_init(boot_info_t *boot_info);
-
+void show_mem_info(boot_info_t *boot_info);
 #endif

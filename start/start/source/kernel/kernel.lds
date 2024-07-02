@@ -1,7 +1,7 @@
 SECTIONS{
-    PROVIDE(kernel_base = .);
+    PROVIDE(kernel_base = 0x0);
 
-    . = 0x10000;
+    . = 0x00010000;
 
     PROVIDE(s_text = .);
     .text : {
@@ -12,8 +12,9 @@ SECTIONS{
         *(.rodata)
     }
     PROVIDE(e_text = .);
-    PROVIDE(s_data = .);
     
+    
+    PROVIDE(s_data = .);
     .data : {
         *(.data)
     }

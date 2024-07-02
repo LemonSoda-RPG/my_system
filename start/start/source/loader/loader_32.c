@@ -74,7 +74,7 @@ static void die(int a)
 #define PDE_W		(1<<1)
 #define PDE_PS		(1<<7)
 
-
+// 开启分页机制  测试代码
 void enable_page_mode(){
 	static uint32_t page_dir[1024] __attribute__((aligned(4096))) = {
 		[0] = PDE_P | PDE_W | PDE_PS 
@@ -83,8 +83,7 @@ void enable_page_mode(){
 	uint32_t cr4 = read_cr4();
 	write_cr4(cr4|CR4_PSE);
 
-	// uint32_t cr3 = read_cr3();
-	write_cr3((uint32_t)page_dir);
+	write_cr3((uint32_t)page_dir);   // 将一级页表的地址给予cr3寄存器
 
 	write_cr0(read_cr0()|CR0_PG);
 
@@ -100,7 +99,7 @@ void load_kernel(void)
 	{
 		die(-1);
 	}
-
+	//!!!!!!!!!
 
 	enable_page_mode();
 
