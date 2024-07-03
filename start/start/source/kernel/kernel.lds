@@ -13,7 +13,7 @@ SECTIONS{
     }
     PROVIDE(e_text = .);
     
-    
+
     PROVIDE(s_data = .);
     .data : {
         *(.data)

@@ -126,7 +126,7 @@ int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int cou
 
         // 创建映射的时候，这条pte应当是不存在的。
         // 如果存在，说明可能有问题
-        // log_printf("\tpte addr: 0x%x", (uint32_t)pte);
+        log_printf("\tpte addr: 0x%x", (uint32_t)pte);
         ASSERT(pte->present == 0);
 
         pte->v = paddr | perm | PTE_P;
