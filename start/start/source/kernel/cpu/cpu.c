@@ -46,10 +46,18 @@ int gdt_alloc_desc(void){
 
 }
 
+void gdt_free_sel(int sel){
+    mutex_lock(&mutex);
+    gdt_table[sel/sizeof(segment_desc_set)].attr = 0;
+    mutex_unlock(&mutex);
+
+}
+
 void swith_to_tss(uint32_t tss_sel){
 
     far_jump(tss_sel,0);   // far_jump 之后  taskregister怎么办
 }
+
 
 
 

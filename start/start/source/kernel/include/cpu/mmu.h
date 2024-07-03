@@ -4,6 +4,12 @@
 #include "comm/cpu_instr.h"
 #define PDE_PNT 1024
 #define PTE_P  (1<<0)
+#define PDE_P   (1<<0)
+
+
+#define PDE_W   (1<<1)
+#define PTE_W   (1<<1)
+#define PDE_U   (1<<2)
 
 
 
@@ -61,7 +67,7 @@ static inline void mmu_set_page_dir(uint32_t paddr){
     write_cr3(paddr);
 }
 
-static inline uint32_t pte_paddr(pde_t * pde){
+static inline uint32_t pde_paddr(pde_t * pde){
     return pde->phy_pt_paddr<<12;    // pde是一级页表中的一个成员    返回他存储的二级页表的地址
     // 左移12位是为了补全32位
 }

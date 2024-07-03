@@ -77,6 +77,6 @@ void gate_desc_set(gate_desc_t * desc, uint16_t selector, uint32_t offset, uint1
 int gdt_alloc_desc (void);
 
 void switch_to_tss (uint32_t tss_selector);
-
+void gdt_free_sel(int sel);
 #endif
 

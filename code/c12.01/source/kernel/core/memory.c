@@ -116,7 +116,7 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
  */
 int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int count, uint32_t perm) {
     for (int i = 0; i < count; i++) {
-        // log_printf("create map: v-0x%x p-0x%x, perm: 0x%x", vaddr, paddr, perm);
+        log_printf("create map: v-0x%x p-0x%x, perm: 0x%x", vaddr, paddr, perm);
 
         pte_t * pte = find_pte(page_dir, vaddr, 1);
         if (pte == (pte_t *)0) {
@@ -126,7 +126,7 @@ int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int cou
 
         // 创建映射的时候，这条pte应当是不存在的。
         // 如果存在，说明可能有问题
-        // log_printf("\tpte addr: 0x%x", (uint32_t)pte);
+        log_printf("\tpte addr: 0x%x", (uint32_t)pte);
         ASSERT(pte->present == 0);
 
         pte->v = paddr | perm | PTE_P;

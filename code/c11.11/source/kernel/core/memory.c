@@ -91,13 +91,13 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
         }
 
         // 分配一个物理页表
-        uint32_t pg_paddr = addr_alloc_page(&paddr_alloc, 1);
+        uint32_t pg_paddr = addr_alloc_page(&paddr_alloc, 1);   //  一个pagetable的大小是4kb?   
         if (pg_paddr == 0) {
             return (pte_t *)0;
         }
 
         // 设置为用户可读写，将被pte中设置所覆盖
-        pde->v = pg_paddr | PTE_P;
+        pde->v = pg_paddr |  PDE_P|PDE_W|PDE_U;
 
         // 为物理页表绑定虚拟地址的映射，这样下面就可以计算出虚拟地址了
         //kernel_pg_last[pde_index(vaddr)].v = pg_paddr | PTE_P | PTE_W;
@@ -108,7 +108,7 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
         kernel_memset(page_table, 0, MEM_PAGE_SIZE);
     }
 
-    return page_table + pte_index(vaddr);
+    return page_table + pte_index(vaddr);    // 返回所需的pte在二级页表中的地址
 }
 
 /**
@@ -116,7 +116,7 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
  */
 int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int count, uint32_t perm) {
     for (int i = 0; i < count; i++) {
-        // log_printf("create map: v-0x%x p-0x%x, perm: 0x%x", vaddr, paddr, perm);
+        log_printf("create map: v-0x%x p-0x%x, perm: 0x%x", vaddr, paddr, perm);
 
         pte_t * pte = find_pte(page_dir, vaddr, 1);
         if (pte == (pte_t *)0) {
@@ -144,13 +144,21 @@ int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int cou
 void create_kernel_table (void) {
     extern uint8_t s_text[], e_text[], s_data[], e_data[];
     extern uint8_t kernel_base[];
-
+    /*
+    typedef struct _memory_map_t {
+    void * vstart;     // 虚拟地址
+    void * vend;
+    void * pstart;       // 物理地址
+    uint32_t perm;      // 访问权限
+    }memory_map_t;
+    */
     // 地址映射表, 用于建立内核级的地址映射
     // 地址不变，但是添加了属性
     static memory_map_t kernel_map[] = {
-        {kernel_base,   s_text,         0,              0},         // 内核栈区
+        {kernel_base,   s_text,         0,             PTE_W },         // 内核栈区
         {s_text,        e_text,         s_text,         0},         // 内核代码区
-        {s_data,        (void *)(MEM_EBDA_START - 1),   s_data,        0},      // 内核数据区
+        {s_data,        (void *)(MEM_EBDA_START - 1),   s_data,        PTE_W},      // 内核数据区
+        {(void*)MEM_EXT_START,(void*)MEM_EXT_END,(void*)MEM_EXT_START,PTE_W},
     };
 
     // 清空后，然后依次根据映射关系创建映射表
@@ -199,6 +207,23 @@ void memory_init (boot_info_t * boot_info) {
     // 创建内核页表并切换过去
     create_kernel_table();
 
+
+
     // 先切换到当前页表
     mmu_set_page_dir((uint32_t)kernel_page_dir);
+}
+uint32_t memory_create_uvm(void){
+    // 分配一个页表  页表的大小是4k  一个页表项是4字节，因此有1k个页表项， 每个页表项映射4m的内存   1k*4m  = 4G
+    pde_t *page_dir = (pde_t *)addr_alloc_page(&paddr_alloc,1);
+    if(page_dir==0){
+        return 0;
+    }
+
+    
+    kernel_memset((void*)page_dir,0,MEM_PAGE_SIZE);
+    uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);  //user_pde_start之前  都属于内核的地址空间
+    for(int i = 0;i<user_pde_start;i++){
+        page_dir[i].v = kernel_page_dir[i].v;
+    }
+    return (uint32_t)page_dir;
 }

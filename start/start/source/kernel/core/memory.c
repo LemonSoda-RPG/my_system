@@ -52,10 +52,25 @@ static uint32_t total_mem_size(boot_info_t *boot_info){
     }
     return mem_size;
 }
+uint32_t memory_create_uvm(void){
+    // 分配一个页表  页表的大小是4k  一个页表项是4字节，因此有1k个页表项， 每个页表项映射4m的内存   1k*4m  = 4G
+    pde_t *page_dir = (pde_t *)addr_alloc_page(&paddr_alloc,1);
+    if(page_dir==0){
+        return 0;
+    }
 
+    
+    kernel_memset((void*)page_dir,0,MEM_PAGE_SIZE);
+    uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);  //user_pde_start之前  都属于内核的地址空间
+    for(int i = 0;i<user_pde_start;i++){
+        page_dir[i].v = kernel_page_dir[i].v;
+    }
+    return (uint32_t)page_dir;
+}
 
 void memory_init(boot_info_t *boot_info){
     extern uint8_t * mem_free_start;   //内核代码的结束地址
+    kernel_memset(kernel_page_dir,0,PDE_PNT*sizeof(pde_t));
     // 对内存进行初始化
     log_printf("mem init");
     show_mem_info(boot_info);    // 打印空闲内存的信息
@@ -75,7 +90,7 @@ void memory_init(boot_info_t *boot_info){
     //位图的结束地址
     mem_free += bitmap_byte_count(mem_up1MB_free/MEM_PAGE_SIZE);   
     
-
+    ASSERT(mem_free < (uint8_t *)MEM_EBDA_START);
     create_kernel_table();
     mmu_set_page_dir((uint32_t)kernel_page_dir);
 
@@ -88,7 +103,7 @@ pte_t * find_pte(pde_t *page_dir,uint32_t vaddr,uint32_t alloc){
     // 这里的指针类型是pde_t   但是里面存储了  pte_t的地址  
     pde_t *pde = page_dir + pde_index(vaddr);
     if(pde->present){
-        page_table = (pte_t*)pte_paddr(pde);
+        page_table = (pte_t*)pde_paddr(pde);
     }
     else{
         // 如果不存在 是否分配
@@ -105,10 +120,11 @@ pte_t * find_pte(pde_t *page_dir,uint32_t vaddr,uint32_t alloc){
             if(pg_paddr ==0){
                 return (pte_t*)0; 
             }
-            pde->v = pg_paddr | PTE_P;
+            kernel_memset((void*)pg_paddr,0,MEM_PAGE_SIZE);
+
+            pde->v = pg_paddr | PDE_P | PDE_W ;
             // 分配完成之后  我们将其进行清空
             page_table = (pte_t*) pg_paddr;
-            kernel_memset(page_table,0,MEM_PAGE_SIZE);
 
         }
     }
@@ -144,21 +160,23 @@ void create_kernel_table(){
     extern uint8_t s_text[],e_text[],s_data[];
     extern uint8_t kernel_base[];
     static memory_map_t kernel_map[] = {
-        {kernel_base,s_text,kernel_base,0},
+        {kernel_base, s_text,kernel_base,PTE_W},
         {s_text,e_text,s_text,0},
-        {s_data,(void*)MEM_EBDA_START,s_data,0}
+        {s_data,(void*)MEM_EBDA_START,s_data,PTE_W},
+        {(void*)MEM_EXT_START,(void*)MEM_EXT_END,(void*)MEM_EXT_START,PTE_W}
     };
 
     // 对表进行遍历  配置页表属性
     for(int i =0;i<sizeof(kernel_map)/sizeof(memory_map_t);i++){
         memory_map_t *map = kernel_map+i;
 
-        uint32_t vstart = up2((uint32_t)map->vstart,MEM_PAGE_SIZE);
-        uint32_t vend = down2((uint32_t)map->vend,MEM_PAGE_SIZE);
+        uint32_t vstart = down2((uint32_t)map->vstart,MEM_PAGE_SIZE);
+        uint32_t vend = up2((uint32_t)map->vend,MEM_PAGE_SIZE);
+        uint32_t pstart = down2((uint32_t)map->pstart,MEM_PAGE_SIZE);
         int page_count = (vend - vstart) / MEM_PAGE_SIZE;
 
         // 对内存进行映射
-        memory_create_map(kernel_page_dir, vstart,(uint32_t)map->pstart,page_count,map->perm);
+        memory_create_map(kernel_page_dir, vstart,pstart,page_count,map->perm);
 
     }
 

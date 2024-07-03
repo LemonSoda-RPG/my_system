@@ -78,4 +78,5 @@ void cpu_init (void);
 
 int gdt_alloc_desc(void);
 void swith_to_tss(uint32_t tss_sel);
+void gdt_free_sel(int sel);
 #endif

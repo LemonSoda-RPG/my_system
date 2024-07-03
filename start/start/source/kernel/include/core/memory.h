@@ -10,6 +10,8 @@
 #define MEM_EXT_START   (1024*1024)
 #define MEM_PAGE_SIZE   4096
 #define MEM_EBDA_START  0x80000
+#define MEMORY_TASK_BASE    0x80000000    // 我们给内核空间分配了2g
+#define MEM_EXT_END     (128 * 1024 * 1024 - 1)    
 typedef struct _addr_alloc_t{
     
     bitmap_t bitmap;  //位图
@@ -33,4 +35,6 @@ void create_kernel_table();
 pte_t * find_pte(pde_t *page_dir,uint32_t vaddr,uint32_t alloc);
 void memory_init(boot_info_t *boot_info);
 void show_mem_info(boot_info_t *boot_info);
+
+uint32_t memory_create_uvm(void);
 #endif

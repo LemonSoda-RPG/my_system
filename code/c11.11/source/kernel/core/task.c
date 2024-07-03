@@ -4,13 +4,15 @@
  * 作者：李述铜
  * 联系邮箱: 527676163@qq.com
  */
+
+#include "cpu/mmu.h"
 #include "comm/cpu_instr.h"
 #include "core/task.h"
 #include "tools/klib.h"
 #include "tools/log.h"
 #include "os_cfg.h"
 #include "cpu/irq.h"
-
+#include "core/memory.h"
 static task_manager_t task_manager;     // 任务管理器
 static uint32_t idle_task_stack[IDLE_STACK_SIZE];	// 空闲任务堆栈
 
@@ -36,6 +38,15 @@ static int tss_init (task_t * task, uint32_t entry, uint32_t esp) {
             = task->tss.fs = task->tss.gs = KERNEL_SELECTOR_DS;   // 暂时写死
     task->tss.cs = KERNEL_SELECTOR_CS;    // 暂时写死
     task->tss.iomap = 0;
+
+    uint32_t page_dir = memory_create_uvm();
+    if(page_dir == 0){
+        gdt_free_sel(tss_sel);
+        return -1;
+    }
+    task->tss.cr3 = page_dir;
+
+
 
     task->tss_sel = tss_sel;
     return 0;
@@ -82,11 +93,15 @@ void task_switch_from_to (task_t * from, task_t * to) {
 }
 
 void task_first_init (void) {
-    task_init(&task_manager.first_task, "first task", 0, 0);
+
+    extern void first_task_entry(void);
+    uint32_t first_start = (uint32_t) first_task_entry;
+    task_init(&task_manager.first_task, "first task", first_start, 0);
 
     // 写TR寄存器，指示当前运行的第一个任务
     write_tr(task_manager.first_task.tss_sel);
     task_manager.curr_task = &task_manager.first_task;
+    mmu_set_page_dir(&task_manager.first_task.tss.cr3);
 }
 
 /**

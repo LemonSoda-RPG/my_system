@@ -59,8 +59,9 @@ static uint32_t reload_elf(uint8_t* file_buffer)
 		{
 			*dest++ = 0;
 		}
-		return elf_hdr->e_entry;
 	}
+	return elf_hdr->e_entry;
+
 }
 
 static void die(int a)

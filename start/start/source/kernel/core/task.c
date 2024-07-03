@@ -43,7 +43,17 @@ static int tss_init(task_t *task, uint32_t entry, uint32_t esp){
     task->tss.cs = KERNEL_SELECTOR_CS;
     task->tss.eflags = EFLAGS_DEFAULT | EFLAGS_IF;
     task->tss.iomap = 0;
+
+    // 为当前进程创建页表
+    uint32_t page_dir = memory_create_uvm();
+    if(page_dir == 0){
+        gdt_free_sel(tss_sel);
+        return -1;
+    }
+    task->tss.cr3 = page_dir;
     task->tss_sel = tss_sel;
+
+
     
     return 0;
 }   
