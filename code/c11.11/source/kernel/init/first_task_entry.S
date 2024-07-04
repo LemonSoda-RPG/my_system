@@ -10,4 +10,4 @@ first_task_entry:
     mov %ax, %gs
 
     // 长跳转进入到32位内核加载模式中
-    jmp $first_task_main
+    jmp first_task_main

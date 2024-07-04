@@ -96,12 +96,15 @@ void task_first_init (void) {
 
     extern void first_task_entry(void);
     uint32_t first_start = (uint32_t) first_task_entry;
+    // 对任务进行初始化
+    // 这个任务一开始是有汇编运行的  之后会跳转到C
     task_init(&task_manager.first_task, "first task", first_start, 0);
 
     // 写TR寄存器，指示当前运行的第一个任务
     write_tr(task_manager.first_task.tss_sel);
     task_manager.curr_task = &task_manager.first_task;
-    mmu_set_page_dir(&task_manager.first_task.tss.cr3);
+    // 在这里对页表进行了切换  重新加载页表
+    mmu_set_page_dir(task_manager.first_task.tss.cr3);
 }
 
 /**
