@@ -13,7 +13,7 @@
 
 #define TASK_NAME_SIZE				32			// 任务名字长度
 #define TASK_TIME_SLICE_DEFAULT		10			// 时间片计数
-
+#define TASK_FLAGS_SYSTEM			(1<<0)
 /**
  * @brief 任务控制块结构
  */
@@ -40,7 +40,7 @@ typedef struct _task_t {
 	list_node_t all_node;		// 所有队列结点
 }task_t;
 
-int task_init (task_t *task, const char * name, uint32_t entry, uint32_t esp);
+int task_init (task_t *task, const char * name, int flag,uint32_t entry, uint32_t esp);
 void task_switch_from_to (task_t * from, task_t * to);
 void task_set_ready(task_t *task);
 void task_set_block (task_t *task);
@@ -61,6 +61,9 @@ typedef struct _task_manager_t {
 
 	task_t first_task;			// 内核任务
 	task_t idle_task;			// 空闲任务
+
+	int app_code_sel;
+	int app_date_sel;
 }task_manager_t;
 
 void task_manager_init (void);

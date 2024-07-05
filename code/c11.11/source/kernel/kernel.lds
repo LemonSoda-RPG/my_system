@@ -23,14 +23,17 @@ SECTIONS
 		*(EXCLUDE_FILE(*first_task*) .bss)
 	}
 
-
 	e_data = .;
 	/* # 配置操作系统内存结束地址 */
 	. = 0x80000000;
+	/* 这个地址是物理地址 */
+	PROVIDE(s_first_task = LOADADDR(.first_task));
+
+	
 	.first_task : AT(e_data){
 		*first_task_entry*(.text .ratada .bss .data)
 		*first_task*(.text .ratada .bss .data)
 	}
-	e_first_task = LOADADDR(.first_task) + SIZEOF(.first_task);
+	PROVIDE(e_first_task = LOADADDR(.first_task) + SIZEOF(.first_task));
 	PROVIDE(mem_free_start = e_first_task);
 }

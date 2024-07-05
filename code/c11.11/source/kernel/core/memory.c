@@ -227,3 +227,48 @@ uint32_t memory_create_uvm(void){
     }
     return (uint32_t)page_dir;
 }
+int memory_alloc_for_page_dir(uint32_t page_dir,uint32_t vaddr,uint32_t size,int perm){
+    uint32_t curr_vaddr = vaddr;
+    // 计算要分配多少页内存
+    int page_count = up2(size,MEM_PAGE_SIZE) / MEM_PAGE_SIZE;
+    for(int i = 0;i<page_count ; i++){
+        uint32_t paddr = addr_alloc_page(&paddr_alloc , 1);
+        if(paddr ==0){
+            log_printf("error");
+            return 0;
+        }
+        // 分配成功之后 将虚拟内存与 物理地址之间进行映射 
+        int err = memory_create_map((pde_t*) page_dir,curr_vaddr,paddr,1,perm);
+        if(err<0){
+            log_printf("mem alloc failed  no memory");
+          
+            return 0;
+        }
+        curr_vaddr +=MEM_PAGE_SIZE;
+    }
+    return 0;
+}
+int   memory_alloc_page_for(uint32_t addr,  uint32_t size,int perm){
+    return memory_alloc_for_page_dir(task_current()->tss.cr3,addr,size,perm);
+}
+static void* curr_page_dir(void){
+    return (pde_t*)(task_current()->tss.cr3);
+}
+
+uint32_t memory_alloc_page (void){
+    uint32_t addr  = addr_alloc_page(&paddr_alloc,1);
+    return addr;
+}
+void memory_free_page (uint32_t addr){
+
+    if(addr<MEMORY_TASK_BASE){
+        addr_free_page(&paddr_alloc,addr,1);
+    }
+    else{
+        pte_t * pte = find_pte(curr_page_dir(),addr,0);
+        ASSERT((pte==(pte_t*)0)&&pte->present);
+        addr_free_page(&paddr_alloc,pte_paddr(pte),1);
+        pte->v = 0;
+    }
+
+}

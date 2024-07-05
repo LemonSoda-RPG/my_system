@@ -16,7 +16,7 @@
 static task_manager_t task_manager;     // 任务管理器
 static uint32_t idle_task_stack[IDLE_STACK_SIZE];	// 空闲任务堆栈
 
-static int tss_init (task_t * task, uint32_t entry, uint32_t esp) {
+static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     // 为TSS分配GDT
     int tss_sel = gdt_alloc_desc();
     if (tss_sel < 0) {
@@ -29,36 +29,58 @@ static int tss_init (task_t * task, uint32_t entry, uint32_t esp) {
 
     // tss段初始化
     kernel_memset(&task->tss, 0, sizeof(tss_t));
-    task->tss.eip = entry;
-    task->tss.esp = task->tss.esp0 = esp;
+
+
+    uint32_t kernel_stack = memory_alloc_page();
+    if(kernel_stack==0){
+        goto tss_init_failed;
+    }
+    int code_sel,data_sel;
+    if(flag&TASK_FLAGS_SYSTEM){
+        code_sel = KERNEL_SELECTOR_CS;
+        data_sel = KERNEL_SELECTOR_DS;
+    }else{
+        code_sel = task_manager.app_code_sel | SEG_CPL3;
+        data_sel = task_manager.app_date_sel | SEG_CPL3;
+    }
+    
+    task->tss.eip   = entry;
+    task->tss.esp   =  esp;
+    task->tss.esp0  =  kernel_stack+MEM_PAGE_SIZE;
+
     task->tss.ss0 = KERNEL_SELECTOR_DS;
-    task->tss.eip = entry;
+    task->tss.ss = data_sel;
     task->tss.eflags = EFLAGS_DEFAULT | EFLAGS_IF;
-    task->tss.es = task->tss.ss = task->tss.ds
-            = task->tss.fs = task->tss.gs = KERNEL_SELECTOR_DS;   // 暂时写死
-    task->tss.cs = KERNEL_SELECTOR_CS;    // 暂时写死
+    task->tss.es =  task->tss.ds
+            = task->tss.fs = task->tss.gs = data_sel;   // 暂时写死
+    task->tss.cs = code_sel;    // 暂时写死
     task->tss.iomap = 0;
 
     uint32_t page_dir = memory_create_uvm();
     if(page_dir == 0){
-        gdt_free_sel(tss_sel);
-        return -1;
+        
+        goto tss_init_failed;
+
     }
     task->tss.cr3 = page_dir;
 
-
-
     task->tss_sel = tss_sel;
     return 0;
+tss_init_failed:
+    gdt_free_sel(tss_sel);
+    if(kernel_stack){
+        memory_free_page(kernel_stack);
+    }
+    return -1;
 }
 
 /**
  * @brief 初始化任务
  */
-int task_init (task_t *task, const char * name, uint32_t entry, uint32_t esp) {
+int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32_t esp) {
     ASSERT(task != (task_t *)0);
 
-    int err = tss_init(task, entry, esp);
+    int err = tss_init(task,flag, entry, esp);
     if (err < 0) {
         log_printf("init task failed.\n");
         return err;
@@ -95,16 +117,29 @@ void task_switch_from_to (task_t * from, task_t * to) {
 void task_first_init (void) {
 
     extern void first_task_entry(void);
+    // 第一个任务的开始和结束的物理地址
+    extern uint8_t s_first_task[], e_first_task[];
+
+    uint32_t copy_size = (uint32_t)(e_first_task - s_first_task);
+    // 给我们拷贝的程序分配的空间
+    uint32_t alloc_size = 10 * MEM_PAGE_SIZE;
+    ASSERT(copy_size<alloc_size);
+
     uint32_t first_start = (uint32_t) first_task_entry;
     // 对任务进行初始化
     // 这个任务一开始是有汇编运行的  之后会跳转到C
-    task_init(&task_manager.first_task, "first task", first_start, 0);
+    // 
+    task_init(&task_manager.first_task, "first task",0, first_start, first_start+alloc_size);
 
     // 写TR寄存器，指示当前运行的第一个任务
     write_tr(task_manager.first_task.tss_sel);
     task_manager.curr_task = &task_manager.first_task;
     // 在这里对页表进行了切换  重新加载页表
     mmu_set_page_dir(task_manager.first_task.tss.cr3);
+
+    // 在这里已经切换到第一个任务的页表了  我们可以为第一个任务来分配内存了
+    memory_alloc_page_for(first_start, alloc_size,PTE_P|PTE_W| PTE_U);
+    kernel_memcpy((void*)first_start,s_first_task,copy_size);
 }
 
 /**
@@ -127,6 +162,23 @@ static void idle_task_entry (void) {
  * @brief 任务管理器初始化
  */
 void task_manager_init (void) {
+
+    int sel = gdt_alloc_desc();
+    // 配置应用程序的代码段与数据段
+
+    segment_desc_set(sel,0,0xFFFFFFFF,
+        SEG_P_PRESENT | SEG_DPL3 | SEG_S_NORMAL | SEG_TYPE_DATA | SEG_TYPE_RW | SEG_D);
+    task_manager.app_date_sel = sel;
+
+    sel = gdt_alloc_desc();
+        // 配置应用程序的代码段与数据段
+
+
+    segment_desc_set(sel,0,0xFFFFFFFF,
+        SEG_P_PRESENT | SEG_DPL3 | SEG_S_NORMAL | SEG_TYPE_CODE | SEG_TYPE_RW | SEG_D);
+    task_manager.app_code_sel = sel;
+
+    
     // 各队列初始化
     list_init(&task_manager.ready_list);
     list_init(&task_manager.task_list);
@@ -135,6 +187,7 @@ void task_manager_init (void) {
     // 空闲任务初始化
     task_init(&task_manager.idle_task,
                 "idle task", 
+                TASK_FLAGS_SYSTEM,
                 (uint32_t)idle_task_entry, 
                 (uint32_t)(idle_task_stack + IDLE_STACK_SIZE));     // 里面的值不必要写
 

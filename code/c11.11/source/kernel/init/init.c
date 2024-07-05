@@ -28,10 +28,10 @@ void kernel_init (boot_info_t * boot_info) {
 
     // 初始化CPU，再重新加载
     cpu_init();
+    log_init();
 
     // 内存初始化要放前面一点，因为后面的代码可能需要内存分配
     memory_init(boot_info);
-    log_init();
     irq_init();
     time_init();
     task_manager_init();
@@ -41,9 +41,20 @@ void move_to_first_task(void){
     task_t * curr  = task_current();
     ASSERT(curr!=0);
     tss_t * tss = &(curr->tss);
+
+
+        // 也可以使用类似boot跳loader中的函数指针跳转
+    // 这里用jmp是因为后续需要使用内联汇编添加其它代码
     __asm__ __volatile__(
-        "jmp *%p[ip]"::[ip]"r"(tss->eip)
-    );
+        // 模拟中断返回，切换入第1个可运行应用进程
+        // 不过这里并不直接进入到进程的入口，而是先设置好段寄存器，再跳过去
+        "push %[ss]\n\t"			// SS
+        "push %[esp]\n\t"			// ESP
+        "push %[eflags]\n\t"           // EFLAGS
+        "push %[cs]\n\t"			// CS
+        "push %[eip]\n\t"		    // ip
+        "iret\n\t"::[ss]"r"(tss->ss),  [esp]"r"(tss->esp), [eflags]"r"(tss->eflags),
+        [cs]"r"(tss->cs), [eip]"r"(tss->eip));
 }
 
 void init_main(void) {

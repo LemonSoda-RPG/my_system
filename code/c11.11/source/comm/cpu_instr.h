@@ -115,4 +115,9 @@ static inline void write_eflags (uint32_t eflags) {
     __asm__ __volatile__("pushl %%eax\n\tpopfl"::"a"(eflags));
 }
 
+static inline uint32_t read_cr2() {
+    uint32_t cr2;
+    __asm__ __volatile__("mov %%cr2, %[v]":[v]"=r"(cr2));
+    return cr2;
+}
 #endif
