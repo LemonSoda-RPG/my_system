@@ -13,6 +13,7 @@
 #define SEG_D				(1 << 14)		// 控制是否是32位、16位的代码或数据段
 #define SEG_P_PRESENT	    (1 << 7)		// 段是否存在
 
+// 设置段权限
 #define SEG_DPL0			(0 << 5)		// 特权级0，最高特权级
 #define SEG_DPL3			(3 << 5)		// 特权级3，最低权限
 

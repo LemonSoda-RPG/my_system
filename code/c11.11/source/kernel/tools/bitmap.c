@@ -64,6 +64,7 @@ int bitmap_alloc_nbits (bitmap_t * bitmap, int bit, int count) {
 
     while (search_idx < bitmap->bit_count) {
         // 定位到第一个相同的索引处
+        // 定位到第一个符合我们要求的索引处  也就是我们要求位图的值是0  或者是 1
         if (bitmap_get_bit(bitmap, search_idx) != bit) {
             // 不同，继续寻找起始的bit
             search_idx++;

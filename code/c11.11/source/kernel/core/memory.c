@@ -36,6 +36,7 @@ static uint32_t addr_alloc_page (addr_alloc_t * alloc, int page_count) {
 
     int page_index = bitmap_alloc_nbits(&alloc->bitmap, 0, page_count);
     if (page_index >= 0) {
+        // 通过位图索引  计算分配的空间的起始地址
         addr = alloc->start + page_index * alloc->page_size;
     }
 
@@ -82,6 +83,12 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
     pte_t * page_table;
 
     pde_t *pde = page_dir + pde_index(vaddr);
+    // pde中就包含了二级页表的各项信息
+    // 如果二级页表不存在  那么就创建一个二级页表  
+    // 一个二级页表能代表4M大小的数据  当然 页表本身的大小是  每一个页是4字节 4k大小  一个页表要代表4M  就需要1024个页，1024×4
+    // 所以一个页表占用的空间是4kb大小
+    // 所以我们这里只是为页表分配了空间，并没有真正的分配内存   既然没有分配内存 那么内存位图也没有发生改变
+
     if (pde->present) {
         page_table = (pte_t *)pde_paddr(pde);
     } else {
@@ -90,13 +97,16 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
             return (pte_t *)0;
         }
 
-        // 分配一个物理页表
+        // 分配一个物理页表   我们这里分配的页  其实就是二级页表当中的页
+        // 二级页表的地址
         uint32_t pg_paddr = addr_alloc_page(&paddr_alloc, 1);   //  一个pagetable的大小是4kb?   
         if (pg_paddr == 0) {
             return (pte_t *)0;
         }
 
         // 设置为用户可读写，将被pte中设置所覆盖
+        // 将二级页表的地址以及各项权限保存到一级页表当中
+        // 这里权限都给了   那么页表的权限控制主要是在一级页表当中实现的
         pde->v = pg_paddr |  PDE_P|PDE_W|PDE_U;
 
         // 为物理页表绑定虚拟地址的映射，这样下面就可以计算出虚拟地址了
@@ -104,10 +114,11 @@ pte_t * find_pte (pde_t * page_dir, uint32_t vaddr, int alloc) {
 
         // 清空页表，防止出现异常
         // 这里虚拟地址和物理地址一一映射，所以直接写入
+        // 
         page_table = (pte_t *)(pg_paddr);
         kernel_memset(page_table, 0, MEM_PAGE_SIZE);
     }
-
+    //这里返回的是 我们分配的页的信息  在二级页表中所处地址
     return page_table + pte_index(vaddr);    // 返回所需的pte在二级页表中的地址
 }
 
@@ -118,6 +129,8 @@ int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int cou
     for (int i = 0; i < count; i++) {
         // log_printf("create map: v-0x%x p-0x%x, perm: 0x%x", vaddr, paddr, perm);
 
+
+        // 这里得到了当前的虚拟地址在二级页表中的页的地址，当然此时我们仅仅是知道了他在二级页表中的位置  还没有和物理内存联系起来
         pte_t * pte = find_pte(page_dir, vaddr, 1);
         if (pte == (pte_t *)0) {
             // log_printf("create pte failed. pte == 0");
@@ -129,6 +142,10 @@ int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int cou
         // log_printf("\tpte addr: 0x%x", (uint32_t)pte);
         ASSERT(pte->present == 0);
 
+
+        // 这里我们将物理地址和二级页表联系在了一起  将物理地址存储到了二级页表当中   这样之后我们就可以通过虚拟地址
+        // 找到二级页中的页，进而读取其中保存的对应的物理地址   
+        // 映射到此完成。
         pte->v = paddr | perm | PTE_P;
 
         vaddr += MEM_PAGE_SIZE;
@@ -140,6 +157,7 @@ int memory_create_map (pde_t * page_dir, uint32_t vaddr, uint32_t paddr, int cou
 
 /**
  * @brief 根据内存映射表，构造内核页表
+ * 一个物理地址被一个页表映射之后  还能被另一个页表映射
  */
 void create_kernel_table (void) {
     extern uint8_t s_text[], e_text[], s_data[], e_data[];
@@ -154,9 +172,10 @@ void create_kernel_table (void) {
     */
     // 地址映射表, 用于建立内核级的地址映射
     // 地址不变，但是添加了属性
+    // 内核内存没有配置PTE_U权限 所以用户模式下不可访问。
     static memory_map_t kernel_map[] = {
         {kernel_base,   s_text,         0,             PTE_W },         // 内核栈区
-        {s_text,        e_text,         s_text,         0},         // 内核代码区
+        {s_text,        e_text,         s_text,         0},         // 内核代码区   只读的   
         {s_data,        (void *)(MEM_EBDA_START - 1),   s_data,        PTE_W},      // 内核数据区
         {(void*)MEM_EXT_START,(void*)MEM_EXT_END,(void*)MEM_EXT_START,PTE_W},
     };
@@ -262,9 +281,11 @@ uint32_t memory_alloc_page (void){
 void memory_free_page (uint32_t addr){
 
     if(addr<MEMORY_TASK_BASE){
+        //2g以下的内存  我们使用的一对一映射
         addr_free_page(&paddr_alloc,addr,1);
     }
     else{
+        // 2g以上的内存  我们要先找到他对应的物理内存  再进行释放
         pte_t * pte = find_pte(curr_page_dir(),addr,0);
         ASSERT((pte==(pte_t*)0)&&pte->present);
         addr_free_page(&paddr_alloc,pte_paddr(pte),1);

@@ -18,6 +18,7 @@ static uint32_t idle_task_stack[IDLE_STACK_SIZE];	// 空闲任务堆栈
 
 static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     // 为TSS分配GDT
+    // 查找空闲的gdt下表
     int tss_sel = gdt_alloc_desc();
     if (tss_sel < 0) {
         log_printf("alloc tss failed.\n");
@@ -30,13 +31,15 @@ static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     // tss段初始化
     kernel_memset(&task->tss, 0, sizeof(tss_t));
 
-
+    // 为任务分配一个自己的栈
     uint32_t kernel_stack = memory_alloc_page();
     if(kernel_stack==0){
         goto tss_init_failed;
     }
     int code_sel,data_sel;
+    // 
     if(flag&TASK_FLAGS_SYSTEM){
+        // 高特权级就使用 内核段
         code_sel = KERNEL_SELECTOR_CS;
         data_sel = KERNEL_SELECTOR_DS;
     }else{
@@ -56,6 +59,8 @@ static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     task->tss.cs = code_sel;    // 暂时写死
     task->tss.iomap = 0;
 
+
+    // 每一个应用程序进程都有一个自己的页表
     uint32_t page_dir = memory_create_uvm();
     if(page_dir == 0){
         
@@ -128,7 +133,7 @@ void task_first_init (void) {
     uint32_t first_start = (uint32_t) first_task_entry;
     // 对任务进行初始化
     // 这个任务一开始是有汇编运行的  之后会跳转到C
-    // 
+    // 第一个任务属于应用程序  我们将他的特权级设置成3      因此flag传递为0   使用应用程序专用的段
     task_init(&task_manager.first_task, "first task",0, first_start, first_start+alloc_size);
 
     // 写TR寄存器，指示当前运行的第一个任务
@@ -138,6 +143,8 @@ void task_first_init (void) {
     mmu_set_page_dir(task_manager.first_task.tss.cr3);
 
     // 在这里已经切换到第一个任务的页表了  我们可以为第一个任务来分配内存了
+    // PTE_U 可以被用户模式访问
+    
     memory_alloc_page_for(first_start, alloc_size,PTE_P|PTE_W| PTE_U);
     kernel_memcpy((void*)first_start,s_first_task,copy_size);
 }
@@ -185,6 +192,7 @@ void task_manager_init (void) {
     list_init(&task_manager.sleep_list);
 
     // 空闲任务初始化
+    // 空闲任务属于操作系统 我们将他的特权级设置为0  flag传递TASK_FLAGS_SYSTEM
     task_init(&task_manager.idle_task,
                 "idle task", 
                 TASK_FLAGS_SYSTEM,
