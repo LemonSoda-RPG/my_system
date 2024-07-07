@@ -4,6 +4,7 @@
     "cmake.sourceDirectory": "${workspaceFolder}/.",
     "C_Cpp.errorSquiggles": "Disabled",
     "files.associations": {
+        "*.py": "python",
         "dirent.h": "c",
         "lib_syscall.h": "c",
         "task.h": "c",
@@ -14,6 +15,8 @@
         "klib.h": "c",
         "list.h": "c",
         "bitmap.h": "c",
-        "log.h": "c"
+        "log.h": "c",
+        "syscall.h": "c",
+        "os_cfg.h": "c"
     },
 }

@@ -8,6 +8,7 @@
  */
  #include "os_cfg.h"
 
+
   	// 不必加.code32因默认就是32位
  	.text
  	.global _start
@@ -146,3 +147,28 @@ simple_switch:
 	pop %ebx
 	pop %ebp
   	ret
+
+
+
+	.global exception_handler_syscall
+	.extern do_handler_syscall
+exception_handler_syscall:
+	pusha
+	push %ds
+	push %es
+	push %fs
+	push %gs
+	pushf 
+	mov %esp,%eax   //保存栈顶指针
+	push %eax
+	call do_handler_syscall   // 函数可以通过我们压入的这个栈顶指针 相当于给函数传参   这样在函数内部 我们就能找到压入栈的数据
+	add $4,%esp    // 我们前面压入了栈顶 这里相当于弹出
+
+	popf
+	pop %gs
+	pop %fs
+	pop %es
+	pop %ds
+	popa
+	retf $(4*5)
+// retf能够实现远程的切换 从特权级0切换到特权级3

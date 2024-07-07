@@ -10,7 +10,8 @@
 #include "tools/log.h"
 #include "os_cfg.h"
 
-#define IDT_TABLE_NR			128				// IDT表项数量
+#include "core/syscall.h"
+#define IDT_TABLE_NR			256				// IDT表项数量
 
 static gate_desc_t idt_table[IDT_TABLE_NR];	// 中断描述表
 
@@ -231,6 +232,7 @@ void pic_send_eoi(int irq_num) {
  * @brief 中断和异常初始化
  */
 void irq_init(void) {
+    // 为每一个中断都设置了一个门描述符   通过门描述符  去gdt表寻找对应的代码段
 	for (uint32_t i = 0; i < IDT_TABLE_NR; i++) {
     	gate_desc_set(idt_table + i, KERNEL_SELECTOR_CS, (uint32_t) exception_handler_unknown,
                   GATE_P_PRESENT | GATE_DPL0 | GATE_TYPE_IDT);
@@ -258,6 +260,7 @@ void irq_init(void) {
 	irq_install(IRQ20_VE, exception_handler_virtual_exception);
 
 
+    // 装载idt表
 	lidt((uint32_t)idt_table, sizeof(idt_table));
 
 	// 初始化pic 控制器

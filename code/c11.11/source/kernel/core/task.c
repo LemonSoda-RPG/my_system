@@ -97,6 +97,7 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
     task->sleep_ticks = 0;
     task->time_slice = TASK_TIME_SLICE_DEFAULT;
     task->slice_ticks = task->time_slice;
+    task->pid = (uint32_t)task;
     list_node_init(&task->all_node);
     list_node_init(&task->run_node);
     list_node_init(&task->wait_node);
@@ -127,6 +128,7 @@ void task_first_init (void) {
 
     uint32_t copy_size = (uint32_t)(e_first_task - s_first_task);
     // 给我们拷贝的程序分配的空间
+    // 这个其实就是我们给第一个任务分配的应用程序专用的栈
     uint32_t alloc_size = 10 * MEM_PAGE_SIZE;
     ASSERT(copy_size<alloc_size);
 
@@ -358,3 +360,10 @@ void sys_msleep (uint32_t ms) {
 
     irq_leave_protection(state);
 }
+
+int sys_getpid(void){
+    task_t *task = task_current();
+    return task->pid;
+}
+
+int sys_fork
