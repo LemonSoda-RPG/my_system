@@ -12,9 +12,16 @@
 #include "tools/log.h"
 #include "os_cfg.h"
 #include "cpu/irq.h"
+#include "core/syscall.h"
 #include "core/memory.h"
 static task_manager_t task_manager;     // 任务管理器
 static uint32_t idle_task_stack[IDLE_STACK_SIZE];	// 空闲任务堆栈
+static task_t task_table[TASK_NR];   // 存储所有的task
+
+static mutex_t task_table_mutex;
+
+
+
 
 static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     // 为TSS分配GDT
@@ -24,7 +31,7 @@ static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
         log_printf("alloc tss failed.\n");
         return -1;
     }
-
+    // 每个任务的tss段都是保存在gdt表中
     segment_desc_set(tss_sel, (uint32_t)&task->tss, sizeof(tss_t),
             SEG_P_PRESENT | SEG_DPL0 | SEG_TYPE_TSS);
 
@@ -94,6 +101,7 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
     // 任务字段初始化
     kernel_strncpy(task->name, name, TASK_NAME_SIZE);
     task->state = TASK_CREATED;
+    task->parent = (task_t*) 0;
     task->sleep_ticks = 0;
     task->time_slice = TASK_TIME_SLICE_DEFAULT;
     task->slice_ticks = task->time_slice;
@@ -109,6 +117,20 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
     irq_leave_protection(state);
     return 0;
 }
+
+void task_uninit(task_t* task){
+    if(task->tss_sel){
+        gdt_free_sel(task->tss_sel);
+    }
+    if(task->tss.esp0){
+        memory_free_page(task->tss.esp-MEM_PAGE_SIZE);
+    }
+    if(task->tss.cr3){
+        memory_destory_uvm(task->tss.cr3);
+    }
+    kernel_memset(task,0,sizeof(task_t));
+}
+
 
 void simple_switch (uint32_t ** from, uint32_t * to);
 
@@ -167,10 +189,39 @@ static void idle_task_entry (void) {
     }
 }
 
+/** 
+ * @brief 任务分配
+*/
+static task_t * alloc_task(void){
+    task_t *task = (task_t*)0;
+    mutex_lock(&task_table_mutex);
+    for(int i = 0;i<TASK_NR;i++){
+        task_t *curr =  task_table+i;
+        if(curr->name[0] == '\0'){
+            task = curr;
+            break;
+        }
+    }
+    mutex_unlock(&task_table_mutex);
+    return task;
+}
+/** 
+ * @brief 任务释放
+*/
+static void free_task(task_t *task){
+    mutex_lock(&task_table_mutex);
+    task->name[0] = '\0';   
+    mutex_unlock(&task_table_mutex);
+}
+
 /**
  * @brief 任务管理器初始化
  */
 void task_manager_init (void) {
+
+
+    kernel_memset(task_table,0,sizeof(task_table));
+    mutex_init(&task_table_mutex);
 
     int sel = gdt_alloc_desc();
     // 配置应用程序的代码段与数据段
@@ -366,4 +417,65 @@ int sys_getpid(void){
     return task->pid;
 }
 
-int sys_fork
+int sys_fork(void){
+
+    task_t *parent_task = task_current();
+    task_t *child_task = alloc_task();
+    if(child_task ==(task_t*)0 ){
+        goto fork_failed;
+    }
+
+    // 我们要获取父进程执行系统调用时的信息   然后并且复制到子进程中  那么子进程就可以和父进程一样了
+    // 获取父进程进行系统调用时往栈中压入的信息
+    // 当前我们已经处在系统调用当中了  也就说父进程的信息现在已经在栈当中了 我们要将信息读出来
+
+    // esp0就是指向的特权级0的栈顶  但是我们想要得到的是结构体的起始位置  因此要使用栈顶指针减去结构体的大小
+    // 得到了结构体之后 就可以通过eip得到父进程当时运行到的位置
+    syscall_frame_t *frame =(syscall_frame_t *)( parent_task->tss.esp0 - sizeof(syscall_frame_t));
+    // 给子进程进行初始化
+    // 这个入口地址是一个难点
+    // 当前父进程的栈顶指针指向了特权级为0的栈   但是我们的子进程只需要从特权级为3的任务开始就行了
+    // frame当中保存的都是父进程在系统调用之前的信息  所以这个里面保存的esp也是指向特权级3 的  
+    // 但是父进程在系统调用之前进行了很多压栈  因此如果子进程如果要使用父进程的esp指针，要将esp恢复到压栈之前的位置
+    int err = task_init(child_task,parent_task->name,0,frame->eip,frame->esp+sizeof(uint32_t)*SYSCALL_PARAM_COUNT);
+    if(err<0){
+        goto fork_failed;
+    }
+    // 我们这里设置的是子进程的tss     eax存储的是函数的返回值
+    tss_t *tss = &child_task->tss;
+    tss->eax = 0;
+    tss->ebx = frame->ebx;
+    tss->ecx = frame->ecx;
+    tss->edx = frame->edx;
+    tss->esi = frame->esi;
+    tss->edi = frame->edi;
+    tss->ebp = frame->ebp;
+
+    tss->cs = frame->cs;
+    tss->ds = frame->ds;
+    tss->es = frame->es;
+    tss->fs = frame->fs;
+    tss->gs = frame->gs;
+    tss->eflags = frame->eflags;
+    // 指定父进程pid
+    child_task->parent = parent_task;
+
+
+    // 为进程新建一个页表
+    if((tss->cr3 = memory_copy_uvm(parent_task->tss.cr3))<0){
+        goto fork_failed;
+    }
+
+
+
+
+    // 我们这里面运行的依旧是父进程   我们创建的子进程会被放到等待队列当中
+    return child_task->pid;
+fork_failed:
+    if(child_task){
+        task_uninit(child_task);
+        free_task(child_task);
+    }
+    return -1;
+
+}

@@ -226,8 +226,6 @@ void memory_init (boot_info_t * boot_info) {
     // 创建内核页表并切换过去
     create_kernel_table();
 
-
-
     // 先切换到当前页表
     mmu_set_page_dir((uint32_t)kernel_page_dir);
 }
@@ -237,8 +235,6 @@ uint32_t memory_create_uvm(void){
     if(page_dir==0){
         return 0;
     }
-
-    
     kernel_memset((void*)page_dir,0,MEM_PAGE_SIZE);
     uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);  //user_pde_start之前  都属于内核的地址空间
     for(int i = 0;i<user_pde_start;i++){
@@ -291,5 +287,63 @@ void memory_free_page (uint32_t addr){
         addr_free_page(&paddr_alloc,pte_paddr(pte),1);
         pte->v = 0;
     }
+
+}
+
+void memory_destory_uvm(uint32_t page_dir){
+
+
+}
+uint32_t memory_copy_uvm(uint32_t page_dir){
+    uint32_t to_page_dir = memory_create_uvm();   //子进程的一级页表
+    if(to_page_dir==0){
+        goto copy_uvm_failed;
+    }
+
+    uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);
+    pde_t *pde = (pde_t *)page_dir+user_pde_start;
+    for(int i = user_pde_start ;i<PDE_CNT;i++,pde++){
+        if(!pde->present){
+            continue;
+        }
+        // 假如存在二级页表
+        // 那么我们就获取二级页表的地址  并对二级页表进行遍历
+        pte_t *pte = (pte_t*)pte_paddr(pde); 
+        for(int j = 0;j<PTE_CNT;j++,pte++){
+            if(!pte->present){
+                continue;
+            }
+            // 如果父进程的二级页表当中的一页存在  我们就要把信息拷贝到子进程去
+            // 那么当然要为子进程分配物理内存
+            uint32_t page = addr_alloc_page(&paddr_alloc,1);
+            if(page==0){
+                goto copy_uvm_failed;
+            }
+            // 分配成功之后  将物理内存与子进程一级页表建立关系
+
+            // 我们的这个虚拟地址 应该和父进程的虚拟地址是一样的
+            uint32_t vaddr = (i<<22)|(j<<12);
+            // 之前我们为子进程创建了一级页表  
+            //  在memory_create_map 这个函数中 如果有需求 会创建二级页表  因为一个二级页表能容纳1024个物理页
+            int err = memory_create_map((pde_t*)to_page_dir,vaddr,page,1,get_pte_perm(pte));
+            if(err<0){
+                goto copy_uvm_failed;
+            }
+            // 我们终于分配完空间了  且完成了映射  接下来将进行拷贝
+            kernel_memcpy()
+
+
+
+        }
+
+
+
+
+    }
+
+
+
+copy_uvm_failed:
+
 
 }

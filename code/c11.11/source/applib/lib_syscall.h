@@ -26,7 +26,7 @@ static inline int sys_call(syscall_args_t *args){
             "push %[arg1]\n\t"
             "push %[arg0]\n\t"
             "push %[id]\n\t"
-            "lcalll *(%[gate])\n\n"   //在这里跳到了exception_handler_syscall 函数
+            "lcalll *(%[gate])\n\n"   //在这里跳到了exception_handler_syscall 函数  也就是这这里发生了系统调用
             :"=a"(ret)       // a 是调用的处理函数的返回值  
             :[arg3]"r"(args->arg3), [arg2]"r"(args->arg2), [arg1]"r"(args->arg1),
     [arg0]"r"(args->arg0), [id]"r"(args->id),

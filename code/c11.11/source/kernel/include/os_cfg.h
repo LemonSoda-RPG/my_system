@@ -15,7 +15,7 @@
 #define KERNEL_STACK_SIZE       (8*1024)    // 内核栈
 #define SELECTOR_SYSCALL     	(3 * 8)	// 调用门的选择子
 
-
+#define TASK_NR                 128
 
 #define OS_TICK_MS              10       	// 每毫秒的时钟数
 
