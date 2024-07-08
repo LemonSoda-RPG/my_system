@@ -12,9 +12,5 @@ int main(int argc,char** argv){
     for(;;){
         print_msg("shell pid = %d",getpid());
         msleep(1000);
-
-
-
-
     }
 }

@@ -120,9 +120,10 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
 }
 
 
-void task_start(){
+void task_start(task_t *task){
+    irq_state_t state = irq_enter_protection();
     task_set_ready(task);
-
+    irq_leave_protection(state);
 }
 void task_uninit(task_t* task){
     if(task->tss_sel){
@@ -166,6 +167,7 @@ void task_first_init (void) {
     // 第一个任务属于应用程序  我们将他的特权级设置成3      因此flag传递为0   使用应用程序专用的段
     task_init(&task_manager.first_task, "first task",0, first_start, first_start+alloc_size);
 
+
     // 写TR寄存器，指示当前运行的第一个任务
     write_tr(task_manager.first_task.tss_sel);
     task_manager.curr_task = &task_manager.first_task;
@@ -177,6 +179,7 @@ void task_first_init (void) {
     
     memory_alloc_page_for(first_start, alloc_size,PTE_P|PTE_W| PTE_U);
     kernel_memcpy((void*)first_start,s_first_task,copy_size);
+    task_start(&task_manager.first_task);
 }
 
 /**
@@ -249,6 +252,7 @@ void task_manager_init (void) {
     list_init(&task_manager.ready_list);
     list_init(&task_manager.task_list);
     list_init(&task_manager.sleep_list);
+    task_manager.curr_task = (task_t *)0;
 
     // 空闲任务初始化
     // 空闲任务属于操作系统 我们将他的特权级设置为0  flag传递TASK_FLAGS_SYSTEM
@@ -257,8 +261,7 @@ void task_manager_init (void) {
                 TASK_FLAGS_SYSTEM,
                 (uint32_t)idle_task_entry, 
                 (uint32_t)(idle_task_stack + IDLE_STACK_SIZE));     // 里面的值不必要写
-
-    task_manager.curr_task = (task_t *)0;
+    task_start(&task_manager.idle_task);
 }
 
 /**
@@ -474,7 +477,7 @@ int sys_fork(void){
     if((tss->cr3 = memory_copy_uvm(parent_task->tss.cr3))<0){
         goto fork_failed;
     }
-
+    task_start(child_task);
     // 我们这里面运行的依旧是父进程   我们创建的子进程会被放到等待队列当中
     return child_task->pid;
 fork_failed:
