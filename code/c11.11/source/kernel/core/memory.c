@@ -237,6 +237,7 @@ uint32_t memory_create_uvm(void){
     }
     kernel_memset((void*)page_dir,0,MEM_PAGE_SIZE);
     uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);  //user_pde_start之前  都属于内核的地址空间
+    // 直接复制user_pde_start之前的内存信息到新的进程的页表
     for(int i = 0;i<user_pde_start;i++){
         page_dir[i].v = kernel_page_dir[i].v;
     }
@@ -270,6 +271,22 @@ static void* curr_page_dir(void){
     return (pde_t*)(task_current()->tss.cr3);
 }
 
+
+/**
+ * @brief 获取指定虚拟地址的物理地址
+ * 如果转换失败，返回0。
+ */
+uint32_t memory_get_paddr (uint32_t page_dir, uint32_t vaddr) {
+    pte_t * pte = find_pte((pde_t *)page_dir, vaddr, 0);
+    // 这里我们返回的是二级页表的地址
+    if (pte == (pte_t *)0) {
+        return 0;
+    }
+    //我们通过 pte_paddr(pte) 获取的是这个二级页表代表的内存区域的起始地址
+    // 将起始地址加上偏移量才是真正的物理地址   vaddr & (MEM_PAGE_SIZE - 1)  就是偏移量
+    return pte_paddr(pte) + (vaddr & (MEM_PAGE_SIZE - 1));
+}
+
 uint32_t memory_alloc_page (void){
     uint32_t addr  = addr_alloc_page(&paddr_alloc,1);
     return addr;
@@ -290,9 +307,36 @@ void memory_free_page (uint32_t addr){
 
 }
 
-void memory_destory_uvm(uint32_t page_dir){
+/**
+ * @brief 销毁用户空间内存
+ */
+void memory_destroy_uvm (uint32_t page_dir) {
+    uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);
+    pde_t * pde = (pde_t *)page_dir + user_pde_start;
 
+    ASSERT(page_dir != 0);
 
+    // 释放页表中对应的各项，不包含映射的内核页面
+    for (int i = user_pde_start; i < PDE_CNT; i++, pde++) {
+        if (!pde->present) {
+            continue;
+        }
+
+        // 释放页表对应的物理页 + 页表
+        pte_t * pte = (pte_t *)pde_paddr(pde);
+        for (int j = 0; j < PTE_CNT; j++, pte++) {
+            if (!pte->present) {
+                continue;
+            }
+
+            addr_free_page(&paddr_alloc, pte_paddr(pte), 1);
+        }
+
+        addr_free_page(&paddr_alloc, (uint32_t)pde_paddr(pde), 1);
+    }
+
+    // 页目录表
+    addr_free_page(&paddr_alloc, page_dir, 1);
 }
 uint32_t memory_copy_uvm(uint32_t page_dir){
     uint32_t to_page_dir = memory_create_uvm();   //子进程的一级页表
@@ -308,7 +352,7 @@ uint32_t memory_copy_uvm(uint32_t page_dir){
         }
         // 假如存在二级页表
         // 那么我们就获取二级页表的地址  并对二级页表进行遍历
-        pte_t *pte = (pte_t*)pte_paddr(pde); 
+        pte_t *pte = (pte_t*)pde_paddr(pde); 
         for(int j = 0;j<PTE_CNT;j++,pte++){
             if(!pte->present){
                 continue;
@@ -330,20 +374,49 @@ uint32_t memory_copy_uvm(uint32_t page_dir){
                 goto copy_uvm_failed;
             }
             // 我们终于分配完空间了  且完成了映射  接下来将进行拷贝
-            kernel_memcpy()
-
-
-
+            kernel_memcpy((void*)page,(void*)vaddr,MEM_PAGE_SIZE);
         }
-
-
-
-
     }
-
-
+    return to_page_dir;
 
 copy_uvm_failed:
+    if(to_page_dir){
+        memory_destroy_uvm(to_page_dir);
+    }
+    return 0;
+
+}
 
 
+/**
+ * @brief 在不同的进程空间中拷贝字符串
+ * page_dir为目标页表，当前仍为老页表
+ */
+int memory_copy_uvm_data(uint32_t to, uint32_t page_dir, uint32_t from, uint32_t size) {
+    char *buf, *pa0;
+
+    while(size > 0){
+        // 获取目标的物理地址, 也即其另一个虚拟地址
+        // to 是我们的虚拟地址  要知道他的物理地址是哪里
+        // page_dir 在这个页表里面找
+        uint32_t to_paddr = memory_get_paddr(page_dir, to);
+        if (to_paddr == 0) {
+            return -1;
+        }
+
+        // 计算当前可拷贝的大小
+        uint32_t offset_in_page = to_paddr & (MEM_PAGE_SIZE - 1);
+        uint32_t curr_size = MEM_PAGE_SIZE - offset_in_page;
+        if (curr_size > size) {
+            curr_size = size;       // 如果比较大，超过页边界，则只拷贝此页内的
+        }
+
+        kernel_memcpy((void *)to_paddr, (void *)from, curr_size);
+
+        size -= curr_size;
+        to += curr_size;
+        from += curr_size;
+  }
+
+  return 0;
 }

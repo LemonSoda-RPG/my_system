@@ -11,7 +11,7 @@ dd if=kernel.elf of=%DISK1_NAME% bs=512 conv=notrunc seek=100
 
 
 @REM dd if=init.elf of=%DISK1_NAME% bs=512 conv=notrunc seek=5000
-@REM dd if=shell.elf of=%DISK1_NAME% bs=512 conv=notrunc seek=5000
+dd if=shell.elf of=%DISK1_NAME% bs=512 conv=notrunc seek=5000
 
 
 @REM set DISK2_NAME=disk2.vhd

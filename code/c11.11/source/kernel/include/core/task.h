@@ -56,7 +56,11 @@ void sys_msleep (uint32_t ms);
 int sys_getpid(void);
 
 int sys_fork(void);
-
+typedef struct _task_args_t {
+	uint32_t ret_addr;		// 返回地址，无用
+	uint32_t argc;
+	char **argv;
+}task_args_t;
 typedef struct _task_manager_t {
     task_t * curr_task;         // 当前运行的任务
 
@@ -74,6 +78,6 @@ typedef struct _task_manager_t {
 void task_manager_init (void);
 void task_first_init (void);
 task_t * task_first_task (void);
-
+int sys_execve(char*name,char * * argv,char **env);
 #endif
 

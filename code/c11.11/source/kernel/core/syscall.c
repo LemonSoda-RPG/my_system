@@ -2,6 +2,7 @@
 #include "applib/lib_syscall.h"
 #include "core/task.h"
 #include "tools/log.h"
+
 typedef int (*syscall_handler_t)(uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3);
 
 void sys_print_msg(char*fmt,int arg){
@@ -14,6 +15,8 @@ static const syscall_handler_t sys_table[] = {
 	[SYS_getpid] = (syscall_handler_t)sys_getpid,
 	[SYS_printmsg] = (syscall_handler_t)sys_print_msg,
 	[SYS_fork] = (syscall_handler_t)sys_fork,
+	[SYS_execve] = (syscall_handler_t)sys_execve,
+	[SYS_yield] = (syscall_handler_t)sys_yield,
 };
 void do_handler_syscall (syscall_frame_t * frame) {
 	// 超出边界，返回错误

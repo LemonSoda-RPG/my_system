@@ -15,6 +15,9 @@ int first_task_main(void){
     }
     else if(pid==0) {
         print_msg("child",0);
+
+        char * argv[] = {"arg0","arg1","arg2","arg3"};
+        execve("/shell.elf",argv,0);
     }
     for(;;){
         int pid = getpid();

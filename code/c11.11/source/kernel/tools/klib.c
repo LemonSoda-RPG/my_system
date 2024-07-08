@@ -83,6 +83,33 @@ void kernel_memcpy (void * dest, void * src, int size) {
         *d++ = *s++;
     }
 }
+/**
+ * @brief 从路径中解释文件名
+ */
+char * get_file_name (char * name) {
+    char * s = name;
+
+    // 定位到结束符
+    while (*s != '\0') {
+        s++;
+    }
+
+    // 反向搜索，直到找到反斜杆或者到文件开头
+    while ((*s != '\\') && (*s != '/') && (s >= name)) {
+        s--;
+    }
+    return s + 1;
+}
+int strings_count (char ** start) {
+    int count = 0;
+
+    if (start) {
+        while (*start++) {
+            count++;
+        }
+    }
+    return count;
+}
 
 void kernel_memset(void * dest, uint8_t v, int size) {
     if (!dest || !size) {
