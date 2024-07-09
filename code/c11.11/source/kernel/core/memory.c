@@ -420,3 +420,59 @@ int memory_copy_uvm_data(uint32_t to, uint32_t page_dir, uint32_t from, uint32_t
 
   return 0;
 }
+
+
+/**
+ * @brief 调整堆的内存分配，返回堆之前的指针
+ */
+char * sys_sbrk(int incr) {
+  
+    
+    task_t * task = task_current();
+    // 堆的地址
+    char * pre_heap_end = (char * )task->heap_end;
+    int pre_incr = incr;
+
+    ASSERT(incr >= 0);
+
+    // 如果地址为0，则返回有效的heap区域的顶端
+    if (incr == 0) {
+        log_printf("sbrk(0): end = 0x%x", pre_heap_end);
+        return pre_heap_end;
+    } 
+    
+    uint32_t start = task->heap_end;   // 当前堆指针的地址
+    uint32_t end = start + incr;   //  分配之后的地址
+
+    // 起始偏移非0
+    int start_offset = start % MEM_PAGE_SIZE;  // 获取start这个地址在一页内存中的偏移量
+    if (start_offset) {
+        // 不超过1页，只调整  当前我们的这个start所在的页表肯定已经分配了  假如start_offset不为0 说明没有用完 
+        // start_offset加上incr小于MEM_PAGE_SIZE 说明当前分配的这个页表还是够用的 就不需要再额外分配页表了
+        // 所以直接赋值就行了
+        if (start_offset + incr <= MEM_PAGE_SIZE) {
+            task->heap_end = end;   
+            return pre_heap_end;
+        // 如果超过一页了  那就必须额外分配页了  我们这里先将这个start所在的页用完
+        } else {
+            // 超过1页，先只调本页的
+            uint32_t curr_size = MEM_PAGE_SIZE - start_offset;   // 当前页剩余的没用的内存  
+            start += curr_size;
+            incr -= curr_size;  //  减去 curr_size  内存   得到的incr就是剩余要分配的内存
+        }
+    }
+
+    // 处理其余的，起始对齐的页边界的
+    if (incr) {
+        uint32_t curr_size = end - start;   // 当前要分配的内存大小  起始地址是start
+        int err = memory_alloc_page_for(start, curr_size, PTE_P | PTE_U | PTE_W);
+        if (err < 0) {
+            log_printf("sbrk: alloc mem failed.");
+            return (char *)-1;
+        }
+    }
+
+    log_printf("sbrk(%d): end = 0x%x", pre_incr, end);
+    task->heap_end = end;
+    return (char * )pre_heap_end;        
+}

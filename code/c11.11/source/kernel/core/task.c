@@ -105,6 +105,9 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
     task->state = TASK_CREATED;
     task->parent = (task_t*) 0;
     task->sleep_ticks = 0;
+    task->heap_end = 0;
+    task->heap_start = 0;
+
     task->time_slice = TASK_TIME_SLICE_DEFAULT;
     task->slice_ticks = task->time_slice;
     task->pid = (uint32_t)task;
@@ -166,6 +169,12 @@ void task_first_init (void) {
     // 这个任务一开始是有汇编运行的  之后会跳转到C
     // 第一个任务属于应用程序  我们将他的特权级设置成3      因此flag传递为0   使用应用程序专用的段
     task_init(&task_manager.first_task, "first task",0, first_start, first_start+alloc_size);
+    // 初始化堆的起始和结束地址
+    task_manager.first_task.heap_start = (uint32_t) e_first_task;
+    task_manager.first_task.heap_end = (uint32_t) e_first_task;
+
+
+
 
 
     // 写TR寄存器，指示当前运行的第一个任务
@@ -540,6 +549,13 @@ static int load_phdr(int file, Elf32_Phdr * phdr, uint32_t page_dir) {
     // 所以，直接放在cstart哐crt0中直接内存填0，比较简单
     return 0;
 }
+
+
+extern uint8_t __bss_start__[],__bss_end__[];   
+// 这里的结束地址确实和我们的elf文件的结束地址是一样的
+
+
+
 static uint32_t load_elf_file(task_t *task,const char *name,uint32_t page_dir){
 
     Elf32_Ehdr elf_hdr;
@@ -611,9 +627,10 @@ static uint32_t load_elf_file(task_t *task,const char *name,uint32_t page_dir){
             goto load_failed;
         }
 
-        // // 简单起见，不检查了，以最后的地址为bss的地址
-        // task->heap_start = elf_phdr.p_vaddr + elf_phdr.p_memsz;
-        // task->heap_end = task->heap_start;
+        // 简单起见，不检查了，以最后的地址为bss的地址
+        task->heap_start = elf_phdr.p_vaddr + elf_phdr.p_memsz;
+        task->heap_end = task->heap_start;
+        
    }
 
     sys_close(file);
@@ -700,8 +717,6 @@ int sys_execve(char*name,char * * argv,char **env){
  // 准备用户栈空间，预留环境环境及参数的空间
     uint32_t stack_top = MEM_TASK_STACK_TOP - MEM_TASK_ARG_SIZE;    // 预留一部分参数空间
    
-
-
     int err = memory_alloc_for_page_dir(new_page_dir,
         MEM_TASK_STACK_TOP - MEM_TASK_STACK_SIZE,
         MEM_TASK_STACK_SIZE,

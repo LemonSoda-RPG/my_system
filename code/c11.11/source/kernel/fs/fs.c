@@ -59,9 +59,27 @@ int sys_open(const char *name, int flags, ...){
 
 
 }
+#include "tools/log.h"
 int sys_write(int file, char *ptr, int len){
-    return -1;
+    ptr[len] = '\0';
+    
+    log_printf("%s", ptr);
+    return len;
+
 }   
+
+/**
+ * @brief 获取文件状态
+ */
+int sys_fstat(int file, struct stat *st) {
+    kernel_memset(st, 0, sizeof(struct stat));
+    st->st_size = 0;
+    return 0;
+}
+
+int sys_isatty(int file) {
+	return -1;
+}
 /**
  * 移动指针
  */

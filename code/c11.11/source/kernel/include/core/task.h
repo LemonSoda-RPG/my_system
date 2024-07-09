@@ -28,7 +28,9 @@ typedef struct _task_t {
 
     char name[TASK_NAME_SIZE];		// 任务名字
 	uint32_t pid;
-
+	// 堆的起始和结束地址
+	uint32_t heap_start;
+	uint32_t heap_end;
 	struct _task_t * parent;
     int sleep_ticks;		// 睡眠时间
     int time_slice;			// 时间片
