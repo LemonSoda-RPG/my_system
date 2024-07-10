@@ -18,6 +18,7 @@
         "log.h": "c",
         "fs.h": "c",
         "os_cfg.h": "c",
-        "syscall.h": "c"
+        "syscall.h": "c",
+        "sem.h": "c"
     },
 }

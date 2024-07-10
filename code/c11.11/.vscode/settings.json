@@ -20,6 +20,7 @@
         "os_cfg.h": "c",
         "memory.h": "c",
         "stdio.h": "c",
-        "stat.h": "c"
+        "stat.h": "c",
+        "stdarg.h": "c"
     },
 }

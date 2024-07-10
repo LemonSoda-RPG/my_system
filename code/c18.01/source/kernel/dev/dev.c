@@ -2,18 +2,18 @@
 #include "dev/dev.h"
 #include "dev/tty.h"
 #include "tools/klib.h"
-
+// 设备信息是怎么被加载到操作系统当中的呢
 #define DEV_TABLE_SIZE          128     // 支持的设备数量
 
 extern dev_desc_t dev_tty_desc;
 
-// 设备描述表
+// 设备描述表   设备类型注册
 static dev_desc_t * dev_desc_tbl[] = {
-    &dev_tty_desc,
+    &dev_tty_desc,    //
 };
 
-// 设备表
-static device_t dev_tbl[DEV_TABLE_SIZE];
+// 设备表     // 特定的设备
+static device_t dev_tbl[DEV_TABLE_SIZE];  
 
 static int is_devid_bad (int dev_id) {
     if ((dev_id < 0) || (dev_id >=  sizeof(dev_tbl) / sizeof(dev_tbl[0]))) {
@@ -29,17 +29,23 @@ static int is_devid_bad (int dev_id) {
 
 /**
  * @brief 打开指定的设备
+ * major 设备类型
+ * minor  具体的设备号
+ * data  要写的数据
  */
 int dev_open (int major, int minor, void * data) {
     irq_state_t state = irq_enter_protection();
 
     // 遍历：遇到已经打开的直接返回；否则找一个空闲项
+    // 扫描表项  寻找空闲位置
     device_t * free_dev = (device_t *)0;
     for (int i = 0; i < sizeof(dev_tbl) / sizeof(dev_tbl[0]); i++) {
         device_t * dev = dev_tbl + i;
+        // 如果打开次数为0  说明这里是空闲的
         if (dev->open_count == 0) {
             // 纪录空闲值
             free_dev = dev;
+            // 如果已经打开了  看看打开的是不是就是当前的设备  如果是的直接打开次数加一  并返回下标
         } else if ((dev->desc->major == major) && (dev->minor == minor)) {
             // 找到了已经打开的？直接返回就好
             dev->open_count++;
@@ -48,6 +54,8 @@ int dev_open (int major, int minor, void * data) {
         }
     }
 
+
+    // 查看设备类型表
     // 新打开设备？查找设备类型描述符, 看看是不是支持的类型
     dev_desc_t * desc = (dev_desc_t *)0;
     for (int i = 0; i < sizeof(dev_desc_tbl) / sizeof(dev_desc_tbl[0]); i++) {
@@ -57,18 +65,20 @@ int dev_open (int major, int minor, void * data) {
             break;
         }
     }
-
+    // desc 说明是支持的设备 
+    // free_dev  说明有位置
     // 有空闲且有对应的描述项
     if (desc && free_dev) {
+        // 存储信息
         free_dev->minor = minor;
         free_dev->data = data;
         free_dev->desc = desc;
 
-        int err = desc->open(free_dev);
+        int err = desc->open(free_dev);   // 打开设备
         if (err == 0) {
             free_dev->open_count = 1;
             irq_leave_protection(state);
-            return free_dev - dev_tbl;
+            return free_dev - dev_tbl;    //这里返回的是下标吗?
         }
     }
 
@@ -80,6 +90,7 @@ int dev_open (int major, int minor, void * data) {
  * @brief 读取指定字节的数据
  */
 int dev_read (int dev_id, int addr, char * buf, int size) {
+    // 判断设备是否合法
     if (is_devid_bad(dev_id)) {
         return -1;
     }
@@ -124,6 +135,7 @@ void dev_close (int dev_id) {
     device_t * dev = dev_tbl + dev_id;
 
     irq_state_t state = irq_enter_protection();
+    // 如果打开的次数变为0  那才进行真正的关闭  否则就只 打开次数减1
     if (--dev->open_count == 0) {
         dev->desc->close(dev);
         kernel_memset(dev, 0, sizeof(device_t));
