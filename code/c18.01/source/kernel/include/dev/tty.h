@@ -4,6 +4,11 @@
  * 作者：李述铜
  * 联系邮箱: 527676163@qq.com
  */
+
+
+/**
+ *  tty的类
+ */
 #ifndef TTY_H
 #define TTY_H
 
@@ -13,6 +18,11 @@
 #define TTY_IBUF_SIZE				512		// tty输入缓存大小
 #define TTY_OBUF_SIZE				512		// tty输出缓存大小
 
+
+
+/**
+ * tty设备数据的队列  是数据的缓冲区
+ */
 typedef struct _tty_fifo_t {
 	char * buf;
 	int size;				// 最大字节数
@@ -32,7 +42,7 @@ int tty_fifo_put (tty_fifo_t * fifo, char c);
  * tty设备
  */
 typedef struct _tty_t {
-	char obuf[TTY_OBUF_SIZE];
+	char obuf[TTY_OBUF_SIZE];		// 输出
 	tty_fifo_t ofifo;				// 输出队列
 	sem_t osem;
 	char ibuf[TTY_IBUF_SIZE];

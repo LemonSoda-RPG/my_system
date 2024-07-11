@@ -46,7 +46,6 @@ void sem_notify (sem_t * sem) {
         list_node_t * node = list_remove_first(&sem->wait_list);
         task_t * task = list_node_parent(node, task_t, wait_node);
         task_set_ready(task);
-
         task_dispatch();
     } else {
         sem->count++;

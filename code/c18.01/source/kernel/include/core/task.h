@@ -46,7 +46,7 @@ typedef struct _task_t {
     int sleep_ticks;		// 睡眠时间
     int time_slice;			// 时间片
 	int slice_ticks;		// 递减时间片计数
-
+	
     file_t * file_table[TASK_OFILE_NR];	// 任务最多打开的文件数量
 
 	tss_t tss;				// 任务的TSS段
@@ -77,7 +77,7 @@ typedef struct _task_manager_t {
 
 	list_t ready_list;			// 就绪队列
 	list_t task_list;			// 所有已创建任务的队列
-	list_t sleep_list;          // 延时队列
+	list_t sleep_list;          // 延时队列    调用sleep之后 会被加入到这个队列
 
 	task_t first_task;			// 内核任务
 	task_t idle_task;			// 空闲任务

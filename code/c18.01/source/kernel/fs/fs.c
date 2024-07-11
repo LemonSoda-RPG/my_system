@@ -83,7 +83,7 @@ int sys_open(const char *name, int flags, ...) {
         int fd = -1;
         file_t * file = file_alloc();
         if (file) {
-            fd = task_alloc_fd(file);
+            fd = task_alloc_fd(file);  // 分配文件描述符
             if (fd < 0) {
                 goto sys_open_failed;
             }
@@ -102,7 +102,7 @@ int sys_open(const char *name, int flags, ...) {
 		file->dev_id = dev_id;
 		file->mode = 0;
 		file->pos = 0;
-		file->ref = 1;
+		file->ref = 1;   // 有几个指针指向自己
 		file->type = FILE_TTY;
 		kernel_strncpy(file->file_name, name, FILE_NAME_SIZE);
 		return fd;
@@ -118,7 +118,7 @@ sys_open_failed:
 		return -1;
 	} else {
 		if (name[0] == '/') {
-            // 暂时直接从扇区1000上读取, 读取大概40KB，足够了
+            // 暂时直接从扇区5000上读取, 读取大概40KB，足够了
             read_disk(5000, 80, (uint8_t *)TEMP_ADDR);
             temp_pos = (uint8_t *)TEMP_ADDR;
             return TEMP_FILE_ID;

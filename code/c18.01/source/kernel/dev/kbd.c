@@ -142,6 +142,7 @@ static void do_fx_key (int key) {
 
 /**
  * 处理单字符的标准键
+ * 键盘中断处理函数的子函数
  */
 static void do_normal_key (uint8_t raw_code) {
     char key = get_key(raw_code);		// 去掉最高位
@@ -206,7 +207,7 @@ static void do_normal_key (uint8_t raw_code) {
 
             // 最后，不管是否是控制字符，都会被写入
             //log_printf("key=%c", key);
-            tty_in(key);
+            tty_in(key);   
         }
         break;
     }
@@ -233,6 +234,8 @@ static void do_e0_key (uint8_t raw_code) {
 
 /**
  * @brief 按键中断处理程序
+ * 按下键盘触发中断处理程序
+ * 键盘中断并不会触发任务的切换  只有定时中断会触发
  */
 void do_handler_kbd(exception_frame_t *frame) {
     static enum {

@@ -210,6 +210,7 @@ task_t * task_first_task (void) {
  * @brief 空闲任务
  */
 static void idle_task_entry (void) {
+    int a = 1;
     for (;;) {
         hlt();
     }

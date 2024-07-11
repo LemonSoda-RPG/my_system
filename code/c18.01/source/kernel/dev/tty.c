@@ -12,7 +12,7 @@
 #include "tools/log.h"
 #include "cpu/irq.h"
 
-static tty_t tty_devs[TTY_NR];
+static tty_t tty_devs[TTY_NR];    // 存放tty设备的数组
 static int curr_tty = 0;
 
 /**
@@ -66,7 +66,7 @@ int tty_fifo_put (tty_fifo_t * fifo, char c) {
  * @brief 判断tty是否有效
  */
 static inline tty_t * get_tty (device_t * dev) {
-	int tty = dev->minor;
+	int tty = dev->minor;   //获取次设备号
 	if ((tty < 0) || (tty >= TTY_NR) || (!dev->open_count)) {
 		log_printf("tty is not opened. tty = %d", tty);
 		return (tty_t *)0;
@@ -76,10 +76,10 @@ static inline tty_t * get_tty (device_t * dev) {
 }
 
 /**
- * @brief 打开tty设备
+ * @brief 打开tty设备   将dev信息转化成了tty信息
  */
 int tty_open (device_t * dev)  {
-	int idx = dev->minor;
+	int idx = dev->minor;     // 次设备号
 	if ((idx < 0) || (idx >= TTY_NR)) {
 		log_printf("open tty failed. incorrect tty num = %d", idx);
 		return -1;
@@ -87,16 +87,19 @@ int tty_open (device_t * dev)  {
 
 	tty_t * tty = tty_devs + idx;
 	tty_fifo_init(&tty->ofifo, tty->obuf, TTY_OBUF_SIZE);
-	sem_init(&tty->osem, TTY_OBUF_SIZE);
+	// 定义信号量  信号量用完 系统进程 就不能继续写入了  进程写入 给用户看 所以是输出
+	sem_init(&tty->osem, TTY_OBUF_SIZE);    // 写缓冲   信号量是空余空间
 	tty_fifo_init(&tty->ififo, tty->ibuf, TTY_IBUF_SIZE);
-	sem_init(&tty->isem, 0);
+	sem_init(&tty->isem, 0);   // 读缓冲    信号量是剩余数据大小
 
 	tty->iflags = TTY_INLCR | TTY_IECHO;
 	tty->oflags = TTY_OCRLF;
 
 	tty->console_idx = idx;
-
+	// 将dev信息转化为了tty信息
+	// 键盘初始化
 	kbd_init();
+	// 对控制台进行初始化  指定控制台  因为我们可以有很多控制台 
 	console_init(idx);
 	return 0;
 }
@@ -109,15 +112,16 @@ int tty_write (device_t * dev, int addr, char * buf, int size) {
 	if (size < 0) {
 		return -1;
 	}
-
+	// 通过设备结构体得到tty结构体
 	tty_t * tty = get_tty(dev);
 	int len = 0;
 
 	// 先将所有数据写入缓存中
 	while (size) {
 		char c = *buf++;
-
+		//  每次写入一字节
 		// 如果遇到\n，根据配置决定是否转换成\r\n
+		// 转换为换行
 		if (c == '\n' && (tty->oflags & TTY_OCRLF)) {
 			sem_wait(&tty->osem);
 			int err = tty_fifo_put(&tty->ofifo, '\r');
@@ -127,7 +131,8 @@ int tty_write (device_t * dev, int addr, char * buf, int size) {
 		}
 
 		// 写入当前字符
-		sem_wait(&tty->osem);
+		sem_wait(&tty->osem);  // 写入一个 就相当于占用了一个信号量 
+		// 写入数据到缓存  硬件还没有进行读取
 		int err = tty_fifo_put(&tty->ofifo, c);
 		if (err < 0) {
 			break;
@@ -172,6 +177,7 @@ int tty_read (device_t * dev, int addr, char * buf, int size) {
 				pbuf--;
 				break;
 			case '\n':
+			// 假如是回车则停止读取
 				if ((tty->iflags & TTY_INLCR) && (len < size - 1)) {	// \n变成\r\n
 					*pbuf++ = '\r';
 					len++;
@@ -214,7 +220,11 @@ void tty_close (device_t * dev) {
 
 /**
  * @brief 输入tty字符
- */
+ * 键盘上屏函数
+ * 键盘打字 就必须用这个函数
+ * 按下键盘 触发中断  运行到这里之后   将数据存储到缓冲区域
+ * 然后释放信号量  将等待的队列加入到就绪队列  比如read_tty  因为我们通过tty_in写了数据  他就可以运行了
+ */  
 void tty_in (char ch) {
 	tty_t * tty = tty_devs + curr_tty;
 

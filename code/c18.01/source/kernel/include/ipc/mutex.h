@@ -16,7 +16,7 @@
 typedef struct _mutex_t {
     task_t * owner;
     int locked_count;
-    list_t wait_list;
+    list_t wait_list;    // 等待队列  等待锁的任务会被加入到这个队列
 }mutex_t;
 
 void mutex_init (mutex_t * mutex);

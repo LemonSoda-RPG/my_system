@@ -23,6 +23,7 @@ static int log_dev_id;
 
 /**
  * @brief 初始化日志输出
+ *  初始化日志输出  开启屏幕与键盘
  */
 void log_init (void) {
     mutex_init(&mutex);
@@ -70,10 +71,14 @@ void log_printf(const char * fmt, ...) {
     outb(COM1_PORT, '\r');
     outb(COM1_PORT, '\n');
 #else
+    // 原本是通过控制台打印
+    // 现在我们有了tty  所以现在使用tty进行打印
     //console_write(0, str_buf, kernel_strlen(str_buf));
+    //  写入信息
     dev_write(log_dev_id, 0, str_buf, kernel_strlen(str_buf));
 
     char c = '\n';
+    // 写入换行
     //console_write(0, &c, 1);
     dev_write(log_dev_id, 0, &c, 1);
 

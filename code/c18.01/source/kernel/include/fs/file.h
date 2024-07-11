@@ -28,9 +28,7 @@ typedef struct _file_t {
     file_type_t type;           // 文件类型
     uint32_t size;              // 文件大小
     int ref;                    // 引用计数
-
     int dev_id;                 // 文件所属的设备号 
-
     int pos;                   	// 当前位置
     int mode;					// 读写模式
 } file_t;

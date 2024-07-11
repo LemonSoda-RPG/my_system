@@ -96,6 +96,7 @@ int dev_read (int dev_id, int addr, char * buf, int size) {
     }
 
     device_t * dev = dev_tbl + dev_id;
+    //这里调用的是设备类型对应的read  比如   tty_read
     return dev->desc->read(dev, addr, buf, size);
 }
 

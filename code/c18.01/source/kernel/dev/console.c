@@ -12,9 +12,21 @@
 #include "cpu/irq.h"
 
 #define CONSOLE_NR          8           // 控制台的数量
-
+static void move_forward (console_t * console, int n);
 static console_t console_buf[CONSOLE_NR];
+/**
+ * 在当前位置显示一个字符
+ */
+static void show_char(console_t * console, char c) {
+    // 每显示一个字符，都进行计算，效率有点低。不过这样直观简单
+    int offset = console->cursor_col + console->cursor_row * console->display_cols;
 
+    disp_char_t * p = console->disp_base + offset;
+    p->c = c;
+    p->foreground = console->foreground;
+    p->background = console->background;
+    move_forward(console, 1);
+}
 /**
  * @brief 读取当前光标的位置
  */
@@ -61,6 +73,8 @@ void console_select(int idx) {
 
     // 更新光标到当前屏幕
     update_cursor_pos(console);
+    // char num = idx+'0';
+    // show_char(console,(char)num);
 }
 /**
  * @brief 擦除从start到end的行
@@ -126,19 +140,7 @@ static void move_forward (console_t * console, int n) {
 	}
 }
 
-/**
- * 在当前位置显示一个字符
- */
-static void show_char(console_t * console, char c) {
-    // 每显示一个字符，都进行计算，效率有点低。不过这样直观简单
-    int offset = console->cursor_col + console->cursor_row * console->display_cols;
 
-    disp_char_t * p = console->disp_base + offset;
-    p->c = c;
-    p->foreground = console->foreground;
-    p->background = console->background;
-    move_forward(console, 1);
-}
 
 /**
  * 光标左移
@@ -218,6 +220,7 @@ int console_init (int idx) {
 
     console->foreground = COLOR_White;
     console->background = COLOR_Black;
+    //  假如打开的是第一个屏幕  则不做修改 保留内容  假如是其他的屏幕  则清空
     if (idx == 0) {
         int cursor_pos = read_cursor_pos();
         console->cursor_row = cursor_pos / console->display_cols;
@@ -437,6 +440,7 @@ static void write_esc_square (console_t * console, char c) {
 /**
  * 实现pwdget作为tty的输出
  * 可能有多个进程在写，注意保护
+ * 从tty读取信息并写入到控制台
  */
 int console_write (tty_t * tty) {
 	console_t * console = console_buf + tty->console_idx;
@@ -450,6 +454,7 @@ int console_write (tty_t * tty) {
         if (err < 0) {
             break;
         }
+        // 从tty当中取出了一个数据之后  要归还一个信号量
         sem_notify(&tty->osem);
 
         // 显示出来
@@ -469,6 +474,7 @@ int console_write (tty_t * tty) {
     }while (1);
 
     update_cursor_pos(console);
+    // 写入数据的长度
     return len;
 }
 

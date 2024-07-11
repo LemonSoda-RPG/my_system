@@ -49,7 +49,7 @@ static void read_disk(int sector, int sector_count, uint8_t * buf) {
 
 int sys_open(const char *name, int flags, ...){
     if (name[0] == '/') {
-        // 暂时直接从扇区1000上读取, 读取大概40KB，足够了
+        // 暂时直接从扇区5000上读取, 读取大概40KB，足够了
         read_disk(5000, 80, (uint8_t *)TEMP_ADDR);   // 读取80个扇区  每个扇区的大小是512字节
         temp_pos = (uint8_t *)TEMP_ADDR;
         return TEMP_FILE_ID;   //返回一个文件描述符

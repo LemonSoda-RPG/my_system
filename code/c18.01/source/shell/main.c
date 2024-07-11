@@ -48,15 +48,21 @@ static void cli_init(const char * promot, const cli_cmd_t * cmd_list, int cnt) {
     cli.cmd_end = cmd_list + cnt;
 }
 
+
+char temp[256];
 int main (int argc, char **argv) {
-	open(argv[0], 0);
+	open(argv[0], 0);      // 不会创建额外的文件描述符     所以读写不会发生冲突
     dup(0);     // 标准输出
     dup(0);     // 标准错误输出
 
    	cli_init(promot, cmd_list, sizeof(cmd_list) / sizeof(cli_cmd_t));
     for (;;) {
         show_promot();
-        gets(cli.curr_input);
+        // 在这里调用了  read  假如没有数据  就会在这里陷入阻塞
+        // gets(cli.curr_input);
+        gets(temp);
+        puts(temp);
+        // puts("hahahahahahah\0\n");
     }
 
     return 0;
