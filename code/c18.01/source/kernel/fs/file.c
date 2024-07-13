@@ -50,3 +50,11 @@ void file_table_init (void) {
 	kernel_memset(&file_table, 0, sizeof(file_table));
 	mutex_init(&file_alloc_mutex);
 }
+/**
+ * @brief 增加file的引用计数
+ */
+void file_inc_ref (file_t * file) {
+    mutex_lock(&file_alloc_mutex);
+	file->ref++;
+    mutex_unlock(&file_alloc_mutex);
+}

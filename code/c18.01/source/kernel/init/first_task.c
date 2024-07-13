@@ -53,7 +53,11 @@ int first_task_main (void) {
     }
 
     while (1) {
-        msleep(10000);
+
+        int status;
+
+        // msleep(10000);
+        wait(&status);
     }
 
     return 0;

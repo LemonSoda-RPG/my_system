@@ -22,6 +22,26 @@ static uint32_t idle_task_stack[IDLE_STACK_SIZE];	// 空闲任务堆栈
 static task_t task_table[TASK_NR];      // 用户进程表
 static mutex_t task_table_mutex;        // 进程表互斥访问锁
 
+
+
+/**
+ * @brief 从当前进程中拷贝已经打开的文件列表
+ */
+static void copy_opened_files(task_t * child_task) {
+    task_t * parent = task_current();
+
+    for (int i = 0; i < TASK_OFILE_NR; i++) {
+        file_t * file = parent->file_table[i];
+        if (file) {
+            file_inc_ref(file);
+            child_task->file_table[i] = parent->file_table[i];
+        }
+    }
+}
+
+
+
+
 static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     // 为TSS分配GDT
     int tss_sel = gdt_alloc_desc();
@@ -82,6 +102,129 @@ tss_init_failed:
     return -1;
 }
 
+
+
+
+
+// 等待子进程结束并进行回收
+/**
+ * @brief 等待子进程退出
+ */
+int sys_wait(int* status) {
+    task_t * curr_task = task_current();
+
+    for (;;) {
+        // 因为父进程不会记录自己的子进程 所以要先遍历所有进程 查找僵尸进程  然后查看当前僵尸进程的
+        // 父进程是不是自己
+        // 遍历，找僵尸状态的进程，然后回收。如果收不到，则进入睡眠态
+        mutex_lock(&task_table_mutex);
+        for (int i = 0; i < TASK_NR; i++) {
+            task_t * task = task_table + i;
+            if (task->parent != curr_task) {
+                continue;
+            }
+
+            if (task->state == TASK_ZOMBIE) {
+                int pid = task->pid;
+
+
+                // 子进程当时结束时的运行状态
+                *status = task->status;
+                // 释放内存
+                memory_destroy_uvm(task->tss.cr3);
+                // 释放栈
+                memory_free_page(task->tss.esp0 - MEM_PAGE_SIZE);
+                kernel_memset(task, 0, sizeof(task_t));
+
+                mutex_unlock(&task_table_mutex);
+                return pid;
+            }
+        }
+        mutex_unlock(&task_table_mutex);
+
+        // 找不到，则等待  // 子进程还没有变成僵尸进程  那么就等待
+        irq_state_t state = irq_enter_protection();
+        task_set_block(curr_task);
+        curr_task->state = TASK_WAITING;
+        task_dispatch();
+        irq_leave_protection(state);
+    }
+}
+
+
+
+
+/**
+ * @brief 退出进程
+ */
+void sys_exit(int status) {
+    // 获取当前进程
+    task_t * curr_task = task_current();
+    
+    // 关闭所有已经打开的文件, 标准输入输出库会由newlib自行关闭，但这里仍然再处理下
+    // 关闭当前进程所有打开的文件描述符
+    for (int fd = 0; fd < TASK_OFILE_NR; fd++) {
+        file_t * file = curr_task->file_table[fd];
+        if (file) {
+            sys_close(fd);    
+            curr_task->file_table[fd] = (file_t *)0;
+        }
+    }
+    int move_child = 0;
+    mutex_lock(&task_table_mutex);
+
+    // 进程在退出之前对自己的子进程进行检查  并托付给init
+    // 如果有移动子进程，则唤醒init进程
+
+    // 遍历所有进程 查找子进程
+    for(int i = 0;i<TASK_OFILE_NR;i++){
+        task_t *task = task_table+i;
+        if (task->parent == curr_task) {
+            task->parent  = &task_manager.first_task;
+            if(task->state ==TASK_ZOMBIE){   
+                 // 假如子进程死了  设置为1
+                 // 说明有子进程要收尸
+                move_child = 1;
+            }
+        }
+
+    }
+    mutex_unlock(&task_table_mutex);
+
+
+
+
+
+    irq_state_t state = irq_enter_protection();
+
+    task_t *parent = curr_task->parent;
+    //?  为什么这里是    !=  
+    // ! 解答  这里是为了避免重复唤醒   因为后面还要对自己的父进程进行唤醒  
+    // 假如当前进程的父进程本身就是task_first  那么就会重复唤醒
+    if (move_child && (parent != &task_manager.first_task)) {  // 如果父进程为init进程，在下方唤醒
+        if (task_manager.first_task.state == TASK_WAITING) {
+            task_set_ready(&task_manager.first_task);
+        }
+    }
+    // 当前我要死了  那么我要唤醒我的父进程给我收尸 
+    // 其次假如我的儿子要也要死了  我要唤醒first_task给我的儿子收尸
+    if(parent->state == TASK_WAITING){
+        task_set_ready(curr_task->parent);
+    }
+    
+
+
+    curr_task->state = TASK_ZOMBIE;
+    curr_task->status = status;
+    // 将任务从就绪队列删除
+    task_set_block(curr_task);
+
+    task_dispatch();
+    irq_leave_protection(state);
+
+   
+
+}
 /**
  * @brief 初始化任务
  */
@@ -97,6 +240,7 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
     // 任务字段初始化
     kernel_strncpy(task->name, name, TASK_NAME_SIZE);
     task->state = TASK_CREATED;
+    task->status = 0;
     task->sleep_ticks = 0;
     task->time_slice = TASK_TIME_SLICE_DEFAULT;
     task->slice_ticks = task->time_slice;
@@ -496,6 +640,8 @@ int sys_fork (void) {
         goto fork_failed;
     }
 
+    copy_opened_files(child_task);
+
     // 从父进程的栈中取部分状态，然后写入tss。
     // 注意检查esp, eip等是否在用户空间范围内，不然会造成page_fault
     tss_t * tss = &child_task->tss;
@@ -783,3 +929,5 @@ int sys_getpid (void) {
     task_t * curr_task = task_current();
     return curr_task->pid;
 }
+
+

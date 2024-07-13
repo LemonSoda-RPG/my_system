@@ -11,10 +11,11 @@
 
 #include "comm/types.h"
 #include "dev/tty.h"
+#include "ipc/mutex.h"
 
 // https://wiki.osdev.org/Printing_To_Screen
 #define CONSOLE_VIDEO_BASE			0xb8000		// 控制台显存起始地址,共32KB
-#define CONSOLE_DISP_ADDR           0xb8000
+#define CONSOLE_DISP_ADDR           0xb8000     // 控制台显存起始地址,共32KB
 #define CONSOLE_DISP_END			(0xb8000 + 32*1024)	// 显存的结束地址
 #define CONSOLE_ROW_MAX				25			// 行数
 #define CONSOLE_COL_MAX				80			// 最大列数
@@ -46,6 +47,8 @@ typedef enum _cclor_t {
 /**
  * @brief 显示字符
  */
+// 每个字符的结构体
+
 typedef union {
 	struct {
 		char c;						// 显示的字符
@@ -75,9 +78,10 @@ typedef struct _console_t {
 
     int esc_param[ESC_PARAM_MAX];	// ESC [ ;;参数数量
     int curr_param_index;
+    mutex_t mutex;
 }console_t;
 
-int console_init (int idx);
+int console_init (int idx);   //终端初始化
 int console_write (tty_t * tty);
 void console_close (int dev);
 void console_select(int idx);

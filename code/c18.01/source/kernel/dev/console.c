@@ -233,7 +233,9 @@ int console_init (int idx) {
 
     console->old_cursor_row = console->cursor_row;
     console->old_cursor_col = console->cursor_col;
+    mutex_init(&console->mutex);
 	return 0;
+    // 这里初始化成功之后 怎么让将这些信息让cpu知道呢
 }
 
 
@@ -250,6 +252,7 @@ static void erase_backword (console_t * console) {
 
 /**
  * 普通状态下的字符的写入处理
+ * console   向指定控制台中写入数据
  */
 static void write_normal (console_t * console, char c) {
     switch (c) {
@@ -257,6 +260,7 @@ static void write_normal (console_t * console, char c) {
             console->write_state = CONSOLE_WRITE_ESC;
             break;
         case 0x7F:
+        // 如果是退格键 不仅要将屏幕的内容删除  缓冲区内的内容也要删除
             erase_backword(console);
             break;
         case '\b':		// 左移一个字符
@@ -443,9 +447,12 @@ static void write_esc_square (console_t * console, char c) {
  * 从tty读取信息并写入到控制台
  */
 int console_write (tty_t * tty) {
+
+    
 	console_t * console = console_buf + tty->console_idx;
 
     int len = 0;
+    mutex_lock(&console->mutex);
     do {
         char c;
 
@@ -472,6 +479,7 @@ int console_write (tty_t * tty) {
         }
         len++;
     }while (1);
+    mutex_unlock(&console->mutex);
 
     update_cursor_pos(console);
     // 写入数据的长度

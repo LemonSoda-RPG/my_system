@@ -36,5 +36,5 @@ typedef struct _file_t {
 file_t * file_alloc (void) ;
 void file_free (file_t * file);
 void file_table_init (void);
-
+void file_inc_ref (file_t * file);
 #endif // PFILE_H

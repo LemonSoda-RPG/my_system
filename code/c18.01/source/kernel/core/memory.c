@@ -160,6 +160,7 @@ void create_kernel_table (void) {
         {s_text,        e_text,         s_text,         0},         // 内核代码区
         {s_data,        (void *)(MEM_EBDA_START - 1),   s_data,        PTE_W},      // 内核数据区
         {(void *)CONSOLE_DISP_ADDR, (void *)(CONSOLE_DISP_END - 1), (void *)CONSOLE_VIDEO_BASE, PTE_W},
+        // 显存数据
 
         // 扩展存储空间一一映射，方便直接操作
         {(void *)MEM_EXT_START, (void *)MEM_EXT_END,     (void *)MEM_EXT_START, PTE_W},
