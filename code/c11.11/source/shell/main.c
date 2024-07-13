@@ -3,11 +3,11 @@
 #include <stdio.h>
 int main(int argc,char** argv){
 
-    sbrk(0);
-    sbrk(100);
-    sbrk(200);
-    sbrk(4096*2 + 200);
-    sbrk(4096*4 + 200);
+    // sbrk(0);
+    // sbrk(100);
+    // sbrk(200);
+    // sbrk(4096*2 + 200);
+    // sbrk(4096*4 + 200);
     
 
 

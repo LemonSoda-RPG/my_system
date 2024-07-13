@@ -14,11 +14,18 @@
 #include "fs/file.h"
 #include "tools/log.h"
 #include "dev/dev.h"
-
+#define FS_TABLE_SIZE		10   // 最多支持10种文件类型
 #define TEMP_FILE_ID		100
 #define TEMP_ADDR        	(8*1024*1024)      // 在0x800000处缓存原始
 
 static uint8_t * temp_pos;       // 当前位置
+static list_t mounted_list;		// 文件类型链表  只有指针
+static list_t free_list;		// 初始化的时候  先将文件类型存储到空闲列表
+// 用于存放我们文件类型的结构的数组
+static fs_t fs_table[FS_TABLE_SIZE];
+extern fs_op_t devfs_op;
+
+
 
 /**
 * 使用LBA48位模式读取磁盘
@@ -52,10 +59,91 @@ static void read_disk(int sector, int sector_count, uint8_t * buf) {
 }
 
 /**
+ * @brief 对文件类型链表进行初始化
+ */
+static void mount_list_init(void){
+	list_init(&free_list);
+	for(int i = 0;i<FS_TABLE_SIZE;i++){
+		list_insert_first(&free_list,&fs_table[i].node);
+	}
+	list_init(&mounted_list);
+
+}
+
+static fs_op_t *get_fs_op(fs_type_t type,int major){
+	switch (type)
+	{
+	case FS_DEVFS:
+		return &(devfs_op);
+		break;
+	
+	default:
+		return (fs_op_t*)0;
+		break;
+	}
+}
+static fs_t *mount(fs_type_t type,char *mount_point,int dev_major,int dev_minor){
+	fs_t* fs = (fs_t*)0;
+	log_printf("mount file system,name :%s, dev:%x",mount_point,dev_major);
+	// 判断当前文件类型是否已经挂载了
+	
+	list_node_t *curr = list_first(&mounted_list);
+	while(curr){
+		// 查找当前节点的文件类型
+		fs_t* fs= list_node_parent(curr,fs_t,node);
+		// 进行对比判断
+		if(kernel_strncmp(mount_point,fs->mount_point,FS_MOUNTP_SIZE)==0){
+			log_printf("fs already mounted");
+			goto mount_failed;
+		}
+		// 获取下一个节点
+		curr = list_node_next(curr);
+	}
+
+
+	//  free_node 就是将要保存我们类型信息的节点  
+	// 我们将必要的信息填入之后  就要将他放到mounted的链表当中
+	list_node_t *free_node =list_remove_first(&free_list);
+	if(!free_node){
+		log_printf("no free fs,mount failed");
+		goto mount_failed;
+	}
+
+	fs = list_node_parent(free_node,fs_t,node);
+
+	// 我们要在这里指定回调函数
+	// 根据传入的type字段  选定对应的回调函数
+	fs_op_t *op = get_fs_op(type,dev_major);
+	if(!op){
+		log_printf("unsupport fs type:%d",type);
+		goto mount_failed;
+	}
+	kernel_memset(fs,0,sizeof(fs_t));
+	kernel_memcpy(fs->mount_point,mount_point,FS_MOUNTP_SIZE);
+	fs->op = op;
+	// 进行特定的挂载操作
+	if(fs->op->mount(fs,dev_major,dev_minor)<0){
+		log_printf("mount fs %s failed",mount_point);
+	}
+	list_insert_last(&mounted_list,&fs->node);
+	return fs;
+mount_failed:
+	if(fs){
+		list_insert_last(&free_list,&fs->node);
+	}
+	return (fs_t*)0;
+}
+/**
  * @brief 文件系统初始化
  */
 void fs_init (void) {
+	// 初始化文件描述符表与中断
     file_table_init();
+	mount_list_init();
+	
+	// 挂载文件类型
+	fs_t *fs = mount(FS_DEVFS,"/dev",0,0);
+	ASSERT(fs!=(fs_t*)0);
 }
 
 /**
@@ -220,3 +308,4 @@ int sys_fstat(int file, struct stat *st) {
     st->st_size = 0;
     return 0;
 }
+

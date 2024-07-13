@@ -190,6 +190,7 @@ static void run_exec_file(const char *path,int argc,char**argv){
     }
     else{
         int status;
+        // 父进程等待收尸
         int pid = wait(&status);
         fprintf(stderr, "cmd %s result: %d, pid = %d\n", path, status, pid);
 

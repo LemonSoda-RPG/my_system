@@ -33,7 +33,7 @@ int first_task_main (void) {
         msleep(1000);
     }
 #endif
-
+    // 当前只启动一个命令行接口
     for (int i = 0; i < TTY_NR; i++) {
         int pid = fork();
         if (pid < 0) {
