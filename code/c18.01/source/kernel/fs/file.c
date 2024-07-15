@@ -12,7 +12,7 @@ static file_t file_table[FILE_TABLE_SIZE];      // 系统中可打开的文件�
 static mutex_t file_alloc_mutex;                // 访问file_table的互斥信号量
 
 /**
- * @brief 分配一个文件描述符
+ * @brief 分配一个文件表  这个文件表存储在数组当中  这个数组是唯一的  但是每个文件可以有多个文件表
  */
 file_t * file_alloc (void) {
     file_t * file = (file_t *)0;

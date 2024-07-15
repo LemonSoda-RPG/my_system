@@ -216,6 +216,9 @@ int tty_control (device_t * dev, int cmd, int arg0, int arg1) {
  */
 void tty_close (device_t * dev) {
 
+
+
+
 }
 
 /**
@@ -247,8 +250,8 @@ void tty_select (int tty) {
 		curr_tty = tty;
 	}
 }
-
-// 设备描述表: 描述一个设备所具备的特性
+// devfs会对调用的文件类型进行判断  假如判断调用的是tty文件类型  之后会使用这个回调函数表吧
+// 设备描述表: 描述一个设备类型所具备的特性  tty类型的设备
 dev_desc_t dev_tty_desc = {
 	.name = "tty",
 	.major = DEV_TTY,

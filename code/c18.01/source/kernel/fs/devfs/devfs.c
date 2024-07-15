@@ -21,9 +21,13 @@
 
 
 // 设备文件系统中支持的设备
-// static devfs_type_t devfs_type_list[] = {
-    
-// };
+static devfs_type_t devfs_type_list[] = {
+    {
+        .name = "tty",
+        .dev_type = DEV_TTY,
+        .file_type = FILE_TTY,
+    }
+};
 /**
  * @brief 挂载指定设备
  * 设备文件系统，不需要考虑major和minor
@@ -41,9 +45,40 @@ void devfs_unmount (struct _fs_t * fs) {
 }
 
 /**
- * @brief 打开指定的设备以进行读写
+ * @brief 打开指定的设备以进行读写  这里传入的path就是设备的具体名字
  */
 int devfs_open (struct _fs_t * fs, const char * path, file_t * file) {   
+    // 判断
+    for(int i = 0;i<sizeof(devfs_type_list)/sizeof(devfs_type_list[0]);i++){
+        devfs_type_t *type = devfs_type_list+i;
+        int type_name_len = kernel_strlen(type->name);
+        if(kernel_strncmp(type->name,path,type_name_len)==0){
+            // 找到了当前文件类型
+            // 继续判断 特定文件
+            int minor; 
+            // 通过文件名获取次设备号
+            if(kernel_strlen(path)>type_name_len && path_to_num(path+type_name_len,&minor)<0)
+            {
+                log_printf("get device num failed %s",path);
+                break;
+            }
+            int dev_id  = dev_open(type->dev_type,minor,(void*)0);
+            if(dev_id<0){
+                log_printf("open device  failed %s",path);
+                break;
+
+            }
+            file->dev_id = dev_id;
+            file->fs = fs;
+            file->pos = 0;
+            file->size = 0;
+            file->type = type->file_type;
+            return 0;
+
+        }
+    }
+
+
     return 0;
 }
 

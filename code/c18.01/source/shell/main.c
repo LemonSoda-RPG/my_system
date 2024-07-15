@@ -66,7 +66,6 @@ static int do_echo (int argc, char ** argv) {
         puts(msg_buf);
         return 0;
     }
-    printf("%d",optind);
     // https://www.cnblogs.com/yinghao-liu/p/7123622.html
     // optind是下一个要处理的元素在argv中的索引
     // 当没有选项时，变为argv第一个不是选项元素的索引。
@@ -198,7 +197,7 @@ static void run_exec_file(const char *path,int argc,char**argv){
 }
 char temp[256];
 int main (int argc, char **argv) {
-	open(argv[0], 0);      // 不会创建额外的文件描述符     所以读写不会发生冲突
+	open(argv[0], O_RDWR);      // 不会创建额外的文件描述符     所以读写不会发生冲突
     dup(0);     // 标准输出
     dup(0);     // 标准错误输出
     
@@ -253,15 +252,7 @@ int main (int argc, char **argv) {
         }
         // exec  磁盘加载
 
-
         run_exec_file("",argc,argv);
-   
-   
-   
-        
-
-
-
 
         fprintf(stderr, ESC_COLOR_ERROR"Unknown command: %s\n"ESC_COLOR_DEFAULT, cli.curr_input);
 

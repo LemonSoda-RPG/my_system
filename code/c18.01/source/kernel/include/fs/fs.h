@@ -37,18 +37,20 @@ typedef struct _fs_t{
     fs_type_t type;  // 因为这里使用的是enum类型  初始化时这里的初始值是0  所以默认是fs_devfs类型
     void *data;  // 保存临时的数据
     int dev_id;  // 设备分区
-    list_node_t node; // 链表节点
+    list_node_t node; // 链表节点    链表存储的是各种文件类型  例如 dev  fat16
     mutex_t *mutex;
 }fs_t;
 
-
+const char* path_next_child(const char*path);
 void fs_init (void);
-
+int path_to_num (const char * path, int * num);
 int sys_open(const char *name, int flags, ...);
 int sys_read(int file, char *ptr, int len);
 int sys_write(int file, char *ptr, int len);
 int sys_lseek(int file, int ptr, int dir);
 int sys_close(int file);
+void fs_protect(fs_t *fs);
+void fs_unprotect(fs_t *fs);
 
 int sys_isatty(int file);
 int sys_fstat(int file, struct stat *st);
