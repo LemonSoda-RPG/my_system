@@ -20,14 +20,22 @@ typedef struct _fs_op_t {
     int (*read) (char * buf, int size, file_t * file);
     int (*write) (char * buf, int size, file_t * file);
     void (*close) (file_t * file);
-    int (*seek) (file_t * file, uint32_t offset, int dir);  // 文件读写指针跳转
-    int (*stat)(file_t * file, struct stat *st);    // 获取文件信息
+    int (*seek) (file_t * file, uint32_t offset, int dir);
+    int (*stat)(file_t * file, struct stat *st);
+    int (*ioctl) (file_t * file, int cmd, int arg0, int arg1);
+
+    // int (*opendir)(struct _fs_t * fs,const char * name, DIR * dir);
+    // int (*readdir)(struct _fs_t * fs, DIR* dir, struct dirent * dirent);
+    // int (*closedir)(struct _fs_t * fs,DIR *dir);
+    // int (*unlink) (struct _fs_t * fs, const char * path);
+
 }fs_op_t;
  
 #define FS_MOUNTP_SIZE 512    //名字的最大长度
 typedef enum _fs_type_t
 {
     FS_DEVFS,
+    FS_FAT16,
 }fs_type_t;
 
 // 一个fs就是一种文件类型   文件类型通过链表进行保存

@@ -6,10 +6,12 @@
 #define DEV_TABLE_SIZE          128     // 支持的设备数量
 
 extern dev_desc_t dev_tty_desc;
+extern dev_desc_t dev_disk_desc;
 
 // 设备描述表   设备类型注册
 static dev_desc_t * dev_desc_tbl[] = {
     &dev_tty_desc,    //
+    &dev_disk_desc,
 };
 
 // 设备表     // 特定的设备
@@ -29,8 +31,8 @@ static int is_devid_bad (int dev_id) {
 
 /**
  * @brief 打开指定的设备
- * major 设备类型
- * minor  具体的设备号
+ * major 设备类型    tty之类的   
+ * minor  具体的设备号   不只有一个tty
  * data  要写的数据
  */
 int dev_open (int major, int minor, void * data) {

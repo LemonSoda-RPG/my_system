@@ -16,6 +16,7 @@
 enum {
     DEV_UNKNOWN = 0,            // 未知类型
     DEV_TTY,                // TTY设备
+    DEV_DISK,
 };
 
 struct _dev_desc_t;

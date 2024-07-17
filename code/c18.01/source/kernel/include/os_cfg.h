@@ -21,4 +21,6 @@
 
 #define TASK_NR             128            // 进程的数量
 
+#define ROOT_DEV            DEV_DISK,0Xb1
+
 #endif //OS_OS_CFG_H

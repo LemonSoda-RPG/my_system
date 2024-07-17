@@ -7,12 +7,14 @@
 #include "core/task.h"
 #include "comm/cpu_instr.h"
 #include "tools/klib.h"
+#include "dev/disk.h"
 #include "fs/fs.h"
 #include "comm/boot_info.h"
 #include <sys/stat.h>
 #include "dev/console.h"
 #include "fs/file.h"
 #include "tools/log.h"
+#include "os_cfg.h"
 #include <sys/file.h>
 #include "dev/dev.h"
 #define FS_TABLE_SIZE		10   // 最多支持10种文件类型
@@ -25,6 +27,8 @@ static list_t free_list;		// 初始化的时候  先将文件类型存储到空�
 // 用于存放我们文件类型的结构的数组
 static fs_t fs_table[FS_TABLE_SIZE];
 extern fs_op_t devfs_op;
+extern fs_op_t fatfs_op;
+static fs_t * root_fs;				// 根文件系统
 
 
 
@@ -77,7 +81,9 @@ static fs_op_t *get_fs_op(fs_type_t type,int major){
 	case FS_DEVFS:
 		return &(devfs_op);
 		break;
-	
+	case FS_FAT16:
+		return &(fatfs_op);
+		break;
 	default:
 		return (fs_op_t*)0;
 		break;
@@ -142,10 +148,13 @@ void fs_init (void) {
 	// 初始化文件描述符表与中断
     file_table_init();
 	mount_list_init();
-	
+	disk_init();
 	// 挂载文件类型
 	fs_t *fs = mount(FS_DEVFS,"/dev",0,0);
+
 	ASSERT(fs!=(fs_t*)0);
+	root_fs = mount(FS_FAT16,"/home",ROOT_DEV);
+	ASSERT(root_fs!= (fs_t *)0);
 }
 
 /**
@@ -208,12 +217,20 @@ int path_begin_with(const char*path,const char*str){
 }
 /**
  * 打开文件  多次调用open会创建新的函数表 所以会造成冲突
+ * 
+ * 打开文件  我们会传入文件的名字   有了名字 我们会对名字进行切片 获取一级路径  通过一级路径判断文件的类型
+ * 然后我们会对已经挂载的文件设备类型进行遍历，看看有没有符合这个文件类型的文件管理系统，假如有 我们就能指定文件管理类型
+ * 比如说我们在这里判断他为dev文件  之后我们会使用devopen 接口函数将他打开  在devFS_open函数中 我们会进行进一步的类型判断
+ * 当判断是tty类型之后  将tty类型以及相关参数传递给dev_open函数   最终在dev_open 中调用相关回调函数 
  */
 int sys_open(const char *name, int flags, ...) {
 	if(kernel_strncmp(name,"/shell.elf",3)==0){
 		// 暂时直接从扇区5000上读取, 读取大概40KB，足够了
-		read_disk(5000, 80, (uint8_t *)TEMP_ADDR);
+		// read_disk(5000, 80, (uint8_t *)TEMP_ADDR);
+		int dev_id = dev_open(DEV_DISK,0xa0,(void*)0);
+		dev_read(dev_id,5000,(uint8_t *)TEMP_ADDR,80);
 		temp_pos = (uint8_t *)TEMP_ADDR;
+
 		return TEMP_FILE_ID;
 	}
 
@@ -246,7 +263,7 @@ int sys_open(const char *name, int flags, ...) {
 		name = path_next_child(name);
 	}else{
 		// 假如没有找到我们要的文件结构  可能没有挂载？？
-
+		fs = root_fs;
 	}
 	
 	file->fs = fs;  // 文件系统类型

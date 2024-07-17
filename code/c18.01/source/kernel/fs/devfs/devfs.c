@@ -26,6 +26,11 @@ static devfs_type_t devfs_type_list[] = {
         .name = "tty",
         .dev_type = DEV_TTY,
         .file_type = FILE_TTY,
+    },
+    {
+        .name = "disk",
+        .dev_type = DEV_DISK,
+        .file_type = FILE_DISK,
     }
 };
 /**

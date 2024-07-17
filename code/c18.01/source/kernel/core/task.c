@@ -785,7 +785,7 @@ static uint32_t load_elf_file (task_t * task, const char * name, uint32_t page_d
         if ((elf_phdr.p_type != PT_LOAD) || (elf_phdr.p_vaddr < MEMORY_TASK_BASE)) {
            continue;
         }
-
+        //page_dir 新任务的页表  
         // 加载当前程序头
         int err = load_phdr(file, &elf_phdr, page_dir);
         if (err < 0) {

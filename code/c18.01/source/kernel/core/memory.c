@@ -436,6 +436,7 @@ void memory_init (boot_info_t * boot_info) {
 
 /**
  * @brief 调整堆的内存分配，返回堆之前的指针
+ * incr是指分配多少字节
  */
 char * sys_sbrk(int incr) {
     task_t * task = task_current();
@@ -444,7 +445,7 @@ char * sys_sbrk(int incr) {
 
     ASSERT(incr >= 0);
 
-    // 如果地址为0，则返回有效的heap区域的顶端
+    // 如果大小为0，则返回有效的heap区域的顶端
     if (incr == 0) {
         log_printf("sbrk(0): end = 0x%x", pre_heap_end);
         return pre_heap_end;
@@ -453,7 +454,7 @@ char * sys_sbrk(int incr) {
     uint32_t start = task->heap_end;
     uint32_t end = start + incr;
 
-    // 起始偏移非0
+    // 起始偏移非0  //也就是分配之前  我们已经分配的最后一页没用完 先用上
     int start_offset = start % MEM_PAGE_SIZE;
     if (start_offset) {
         // 不超过1页，只调整
@@ -469,6 +470,7 @@ char * sys_sbrk(int incr) {
     }
 
     // 处理其余的，起始对齐的页边界的
+    // 这里我们直接就分配了  也就是说 我们使用malloc直接就分配了内存
     if (incr) {
         uint32_t curr_size = end - start;
         int err = memory_alloc_page_for(start, curr_size, PTE_P | PTE_U | PTE_W);

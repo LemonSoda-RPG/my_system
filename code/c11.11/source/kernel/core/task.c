@@ -628,6 +628,7 @@ static uint32_t load_elf_file(task_t *task,const char *name,uint32_t page_dir){
         }
 
         // 简单起见，不检查了，以最后的地址为bss的地址
+        // 这里其实也可以使用我们在链接脚本当中获取的bss结束的值
         task->heap_start = elf_phdr.p_vaddr + elf_phdr.p_memsz;
         task->heap_end = task->heap_start;
         

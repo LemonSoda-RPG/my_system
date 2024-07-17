@@ -18,6 +18,7 @@
 typedef enum _file_type_t {
     FILE_UNKNOWN = 0,
     FILE_TTY = 1,
+    FILE_DISK = 2,
 } file_type_t;
 /**
  * 文件描述符

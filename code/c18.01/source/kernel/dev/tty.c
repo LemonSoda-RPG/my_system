@@ -217,8 +217,6 @@ int tty_control (device_t * dev, int cmd, int arg0, int arg1) {
 void tty_close (device_t * dev) {
 
 
-
-
 }
 
 /**
