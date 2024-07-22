@@ -33,7 +33,7 @@ void segment_desc_set(int selector, uint32_t base, uint32_t limit, uint16_t attr
 }
 
 /**
- * 设置门描述符
+ * 设置门描述符   其实就是将我们的信息填到 desc  中 之后还需要将这个表进行加载
  */
 void gate_desc_set(gate_desc_t * desc, uint16_t selector, uint32_t offset, uint16_t attr) {
 	desc->offset15_0 = offset & 0xffff;

@@ -265,7 +265,7 @@ int irq_install(int irq_num, irq_handler_t handler) {
 	if (irq_num >= IDT_TABLE_NR) {
 		return -1;
 	}
-
+    
     gate_desc_set(idt_table + irq_num, KERNEL_SELECTOR_CS, (uint32_t) handler,
                   GATE_P_PRESENT | GATE_DPL0 | GATE_TYPE_IDT);
 	return 0;

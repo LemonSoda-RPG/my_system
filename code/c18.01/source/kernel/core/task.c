@@ -68,7 +68,7 @@ static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
         code_sel = KERNEL_SELECTOR_CS;
         data_sel = KERNEL_SELECTOR_DS;
     } else {
-        // 注意加了RP3,不然将产生段保护错误
+        // 注意加了RP3,不然将产生段保护错误   因为默认是0  用户程序无法访问0级段
         code_sel = task_manager.app_code_sel | SEG_RPL3;
         data_sel = task_manager.app_data_sel | SEG_RPL3;
     }
