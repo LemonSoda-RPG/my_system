@@ -270,9 +270,9 @@ int disk_read (device_t * dev, int start_sector, char * buf, int count) {
     for (cnt = 0; cnt < count; cnt++, buf += disk->sector_size) {
         // 循环读取 每次读取一个扇区
 
-
         // 利用信号量等待中断通知，然后再读取数据
         // 我们发送命令之后需要进行等待
+        // 为什么这里要判断task_current呢  是因为假如task_current 是空的 说明系统还没初始化完毕  此时调用sem会报错
         if (task_current()) {
             sem_wait(disk->op_sem);
         }
@@ -351,7 +351,7 @@ void disk_close(device_t * dev){
  */
 void do_handler_ide_primary (exception_frame_t *frame)  {
     pic_send_eoi(IRQ14_HARDDISK_PRIMARY);
-    if (task_on_op ) {
+    if (task_on_op&&task_current()) {
         sem_notify(&op_sem);
     }
 }

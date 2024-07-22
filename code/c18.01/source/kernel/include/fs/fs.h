@@ -6,8 +6,12 @@
  */
 #ifndef FILE_H
 #define FILE_H
-#include "ipc/mutex.h"
 #include <sys/stat.h>
+#include "file.h"
+#include "tools/list.h"
+#include "applib/lib_syscall.h"
+#include "fs/fatfs/fatfs.h"
+#include "ipc/mutex.h"
 /**
  * @brief 文件系统操作接口
  */
@@ -24,10 +28,10 @@ typedef struct _fs_op_t {
     int (*stat)(file_t * file, struct stat *st);
     int (*ioctl) (file_t * file, int cmd, int arg0, int arg1);
 
-    // int (*opendir)(struct _fs_t * fs,const char * name, DIR * dir);
-    // int (*readdir)(struct _fs_t * fs, DIR* dir, struct dirent * dirent);
-    // int (*closedir)(struct _fs_t * fs,DIR *dir);
-    // int (*unlink) (struct _fs_t * fs, const char * path);
+    int (*opendir)(struct _fs_t * fs,const char * name, DIR * dir);
+    int (*readdir)(struct _fs_t * fs, DIR* dir, struct dirent * dirent);
+    int (*closedir)(struct _fs_t * fs,DIR *dir);
+    int (*unlink) (struct _fs_t * fs, const char * path);
 
 }fs_op_t;
  
@@ -47,6 +51,9 @@ typedef struct _fs_t{
     int dev_id;  // 设备分区
     list_node_t node; // 链表节点    链表存储的是各种文件类型  例如 dev  fat16
     mutex_t *mutex;
+    union {
+        fat_t fat_data;         // 文件系统相关数据  // 大概是保存了目录项相关的东西
+    };
 }fs_t;
 
 const char* path_next_child(const char*path);
@@ -64,6 +71,14 @@ int sys_isatty(int file);
 int sys_fstat(int file, struct stat *st);
 
 int sys_dup (int file);
+
+
+int sys_opendir(const char * name, DIR * dir);
+int sys_readdir(DIR* dir, struct dirent * dirent);
+int sys_closedir(DIR *dir);
+int sys_unlink (const char * path);
+
+
 
 #endif // FILE_H
 

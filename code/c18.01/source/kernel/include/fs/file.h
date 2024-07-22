@@ -17,8 +17,10 @@
  */
 typedef enum _file_type_t {
     FILE_UNKNOWN = 0,
-    FILE_TTY = 1,
-    FILE_DISK = 2,
+    FILE_TTY,
+    FILE_NORMAL,
+    FILE_DISK,
+    FILE_DIR,
 } file_type_t;
 /**
  * 文件描述符

@@ -7,6 +7,8 @@
 #include "core/syscall.h"
 #include "os_cfg.h"
 #include "lib_syscall.h"
+#include "malloc.h"
+#include <string.h>
 
 /**
  * 执行系统调用
@@ -173,3 +175,54 @@ int  wait(int *status){
     sys_call(&args);
 
 }
+
+
+DIR * opendir(const char * name) {
+    DIR * dir = (DIR *)malloc(sizeof(DIR));
+    if (dir == (DIR *)0) {
+        return (DIR *)0;
+    }
+
+    syscall_args_t args;
+    args.id = SYS_opendir;
+    args.arg0 = (int)name;
+    args.arg1 = (int)dir;
+    int err = sys_call(&args);
+    if (err < 0) {
+        free(dir);
+        return (DIR *)0;
+    }
+    return dir;
+}
+
+struct dirent* readdir(DIR* dir) {
+
+    syscall_args_t args;
+    args.id = SYS_readdir;
+    args.arg0 = (int)dir;
+    args.arg1 = (int)&dir->dirent;
+    int err = sys_call(&args);
+    if (err < 0) {
+        return (struct dirent *)0;
+    }
+    return &dir->dirent;   // 读取信息之后进行返回
+}
+
+int closedir(DIR *dir) {
+    syscall_args_t args;
+    args.id = SYS_closedir;
+    args.arg0 = (int)dir;
+    sys_call(&args);
+
+    free(dir);
+    return 0;
+}
+
+int unlink(const char *path) {
+    syscall_args_t args;
+    args.id = SYS_unlink;
+    args.arg0 = (int)path;
+    return sys_call(&args);
+}
+
+

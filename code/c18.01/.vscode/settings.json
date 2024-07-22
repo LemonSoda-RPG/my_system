@@ -21,6 +21,9 @@
         "syscall.h": "c",
         "sem.h": "c",
         "stat.h": "c",
-        "devfs.h": "c"
+        "devfs.h": "c",
+        "disk.h": "c",
+        "malloc.h": "c",
+        "file.h": "c"
     },
 }

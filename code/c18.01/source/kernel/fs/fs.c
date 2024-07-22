@@ -438,7 +438,6 @@ int sys_close(int file) {
 	}
 	ASSERT(p_file->ref>0);
 	
-	
 
 	// 当某个文件表被指针指向的次数变为0  才是真正的关闭
 	if(p_file->ref--==1){
@@ -448,12 +447,6 @@ int sys_close(int file) {
 		fs_unprotect(fs);
 		file_free(p_file);
 	}
-	
-
-
-
-
-
 	return 0;
 }
 
@@ -494,3 +487,34 @@ int sys_fstat(int file, struct stat *st) {
     return err;
 }
 
+int sys_opendir(const char * name, DIR * dir){
+	fs_protect(root_fs);
+	int err = root_fs->op->opendir(root_fs, name, dir);
+	fs_unprotect(root_fs);
+	return err;
+	
+}
+
+int sys_readdir(DIR* dir, struct dirent * dirent){
+	
+	fs_protect(root_fs);
+	int err = root_fs->op->readdir(root_fs, dir, dirent);
+	fs_unprotect(root_fs);
+	return err;
+}
+
+int sys_closedir(DIR *dir){
+
+	fs_protect(root_fs);
+	int err = root_fs->op->closedir(root_fs, dir);
+	fs_unprotect(root_fs);
+	return err;
+
+
+}
+int sys_unlink (const char * path){
+	return -1;
+
+
+
+}
