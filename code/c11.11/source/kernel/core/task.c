@@ -92,6 +92,7 @@ tss_init_failed:
  * @brief 初始化任务
  */
 int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32_t esp) {
+
     ASSERT(task != (task_t *)0);
 
     int err = tss_init(task,flag, entry, esp);
@@ -265,6 +266,7 @@ void task_manager_init (void) {
 
     // 空闲任务初始化
     // 空闲任务属于操作系统 我们将他的特权级设置为0  flag传递TASK_FLAGS_SYSTEM
+    // 空闲任务不需要分配内存  所以堆的指针不用变
     task_init(&task_manager.idle_task,
                 "idle task", 
                 TASK_FLAGS_SYSTEM,

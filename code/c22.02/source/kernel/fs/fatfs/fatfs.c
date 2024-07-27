@@ -439,7 +439,8 @@ void fatfs_unmount (struct _fs_t * fs) {
  * @brief 从diritem中读取相应的文件信息
  */
 static void read_from_diritem (fat_t * fat, file_t * file, diritem_t * item, int index) {
-    file->type = diritem_get_type(item);
+    // 设置文件描述符信息
+    file->type = diritem_get_type(item);   //文件类型
     file->size = (int)item->DIR_FileSize;
     file->pos = 0;
     file->sblk = (item->DIR_FstClusHI << 16) | item->DIR_FstClusL0;
@@ -451,13 +452,15 @@ static void read_from_diritem (fat_t * fat, file_t * file, diritem_t * item, int
  * @brief 打开指定的文件
  */
 int fatfs_open (struct _fs_t * fs, const char * path, file_t * file) {
-    fat_t * fat = (fat_t *)fs->data;
+    fat_t * fat = (fat_t *)fs->data;   // 目录项
     diritem_t * file_item = (diritem_t *)0;
     int p_index = -1;
 
     // 遍历根目录的数据区，找到已经存在的匹配项
+    // root_ent_cnt  根目录的项数
     for (int i = 0; i < fat->root_ent_cnt; i++) {
-        diritem_t * item = read_dir_entry(fat, i);
+        // fat 保存了fat16 文件系统的信息
+        diritem_t * item = read_dir_entry(fat, i);   //  找我们要的文件
         if (item == (diritem_t *)0) {
             return -1;
         }
@@ -475,14 +478,16 @@ int fatfs_open (struct _fs_t * fs, const char * path, file_t * file) {
         }
 
         // 找到要打开的目录
+        // 对文件名进行匹配  看看是不是正确的文件
         if (diritem_name_match(item, path)) {
             file_item = item;
-            p_index = i;
+            p_index = i;   // 记录目录下标  下一次就不用再次遍历了
             break;
         }
     }
 
     if (file_item) {
+        // 读取文件
         read_from_diritem(fat, file, file_item, p_index);
 
         // 如果要截断，则清空
@@ -541,7 +546,7 @@ int fatfs_read (char * buf, int size, file_t * file) {
                 curr_read = fat->cluster_byte_size - cluster_offset;
             }
 
-            // 读取整个簇，然后从中拷贝
+            // 读取整个簇，然后从中拷贝  然后从中拷贝我们需要的部分   
             fat->curr_sector = -1;
             int err = dev_read(fat->fs->dev_id, start_sector, fat->fat_buffer, fat->sec_per_cluster);
             if (err < 0) {

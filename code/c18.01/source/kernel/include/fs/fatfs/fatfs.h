@@ -19,8 +19,10 @@
 
 #define SFN_LEN                    	 	11              // sfn文件名长
 
+
+// 这个课程只实现了根目录的读写
 /**
- * FAT目录项
+ * FAT目录项  
  */
 typedef struct _diritem_t {
     uint8_t DIR_Name[11];                   // 文件名
@@ -72,7 +74,7 @@ typedef struct _fat_t {
     uint32_t tbl_start;                     // FAT表起始扇区号
     uint32_t tbl_cnt;                       // FAT表数量
    
-    uint32_t tbl_sectors;                   // 每个FAT表的扇区数  fat表中子单元式fat表项
+    uint32_t tbl_sectors;                   // 每个FAT表的扇区数  fat表中子单元是fat表项
     uint32_t bytes_per_sec;                 // 每扇区大小
     uint32_t sec_per_cluster;               // 每簇的扇区数
     uint32_t root_ent_cnt;                  // 根目录的项数
@@ -88,5 +90,5 @@ typedef struct _fat_t {
     mutex_t mutex;                          // 互斥信号量
 } fat_t;
 
-typedef uint16_t cluster_t;
+typedef uint16_t  ;
 #endif

@@ -111,6 +111,17 @@ static int do_echo (int argc, char ** argv) {
     return 0;
 }
 
+
+
+
+
+
+
+
+
+
+
+
 /**
  * @brief 列出目录内容   对目录内容进行遍历
  */
@@ -158,6 +169,11 @@ static const cli_cmd_t cmd_list[] = {
         .name = "ls",
         .useage = "ls [dir] -- list director",
         .do_func = do_ls,
+    },
+    {
+        .name = "less",
+        .useage = "less [file] -- open file",
+        .do_func = do_less,
     },
     {
         .name = "quit",

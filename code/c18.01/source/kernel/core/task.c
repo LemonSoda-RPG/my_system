@@ -333,7 +333,13 @@ void task_first_init (void) {
     mmu_set_page_dir(task_manager.first_task.tss.cr3);
 
     // 分配一页内存供代码存放使用，然后将代码复制过去
+    // 复制代码
+    // 这里第一步是分配内存  这里指定的地址是虚拟地址   
     memory_alloc_page_for(first_start,  alloc_size, PTE_P | PTE_W | PTE_U);
+
+    // 这里已经开启虚拟页表了  加载页表之后  此时使用的页表就是第一个任务的页表，
+    // 因为我们对0-128M的内存进行了1：1的映射，所以我们接下来访问0-128m的空间 就是直接访问物理内存
+    // 因此可以实现代码的拷贝
     kernel_memcpy((void *)first_start, (void *)&s_first_task, copy_size);
 
     // 启动进程

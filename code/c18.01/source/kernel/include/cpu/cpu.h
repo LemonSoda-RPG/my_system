@@ -27,6 +27,7 @@
 #define SEG_TYPE_TSS      	(9 << 0)		// 32位TSS
 
 #define GATE_TYPE_IDT		(0xE << 8)		// 中断32位门描述符
+// 异常也可以使用陷阱门描述符 这里我们中断和异常都使用中断门
 #define GATE_TYPE_SYSCALL	(0xC << 8)		// 调用门
 #define GATE_P_PRESENT		(1 << 15)		// 是否存在
 #define GATE_DPL0			(0 << 13)		// 特权级0，最高特权级

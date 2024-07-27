@@ -141,14 +141,14 @@ static int do_less (int argc, char ** argv) {
         optind = 1;        // getopt需要多次调用，需要重置
         return -1;
     }
-
+    // fopen 调用的是什么系统调用呢？？   sys_read   sys_open
     FILE * file = fopen(argv[optind], "r");
     if (file == NULL) {
         fprintf(stderr, "open file failed. %s", argv[optind]);
         optind = 1;        // getopt需要多次调用，需要重置
         return -1;
     }
-
+    //  这里应该是调用的sysbrk吧
     char * buf = (char *)malloc(255);
 
     if (line_mode == 0) {
@@ -158,14 +158,14 @@ static int do_less (int argc, char ** argv) {
     } else {
         // 不使用缓存，这样能直接立即读取到输入而不用等回车
         setvbuf(stdin, NULL, _IONBF, 0);
-        ioctl(0, TTY_CMD_ECHO, 0, 0);
+        ioctl(0, TTY_CMD_ECHO, 0, 0);   // 关闭回显
         while (1) {
             char * b = fgets(buf, 255, file);
             if (b == NULL ) {
                 break;
             }
             fputs(buf, stdout);
-
+            // 这个fputs不会一次性输出完  
             int ch;
             while ((ch = fgetc(stdin)) != 'n') {
                 if (ch == 'q') {

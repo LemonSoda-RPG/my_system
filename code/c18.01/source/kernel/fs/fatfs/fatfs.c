@@ -23,12 +23,14 @@ int fatfs_mount (struct _fs_t * fs,int major, int minor){
         goto mount_failed;
     }
     // 这里是读取一个扇区   这里的读取的具体的单位 要看当前设备的具体类型来确定 磁盘就是扇区
-    int cnt = dev_read(dev_id, 0, (char *)dbr, 1);
+    int cnt = dev_read(dev_id, 0, (char *)dbr, 1);     // 第一个扇区就是dbr区域
     if (cnt < 1) {
         log_printf("read dbr failed.");
         goto mount_failed;
     }
      // 解析DBR参数，解析出有用的参数
+
+     // 这里对 fat_data 进行了填充
     fat_t * fat = &fs->fat_data;
     fat->fat_buffer = (uint8_t *)dbr;
     fat->bytes_per_sec = dbr->BPB_BytsPerSec;
@@ -108,7 +110,7 @@ int fatfs_stat(file_t * file, struct stat *st){
 int fatfs_opendir(struct _fs_t * fs,const char * name, DIR * dir){
 
     // 在这里填充了索引
-    dir->index = 0;
+    dir->index = 0;  // 0就是根目录吧
     return 0;
 
 }
@@ -143,7 +145,7 @@ file_type_t diritem_get_type (diritem_t * item) {
     return item->DIR_Attr & DIRITEM_ATTR_DIRECTORY ? FILE_DIR : FILE_NORMAL;
 }
 /**
- * @brief 在root目录中读取diritem
+ * @brief 在root目录中读取diritem  
  */
 static diritem_t * read_dir_entry (fat_t * fat, int index) {
 
@@ -159,6 +161,7 @@ static diritem_t * read_dir_entry (fat_t * fat, int index) {
     
     // offset 单位是字节
     // fat->root_start + offset / fat->bytes_per_sec 这是在第几块扇区
+    // 将数据读到了fat_buffer 中
     int err = bread_sector(fat, fat->root_start + offset / fat->bytes_per_sec);
     if (err < 0) {
         return (diritem_t *)0;
