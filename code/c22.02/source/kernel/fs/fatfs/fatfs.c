@@ -112,6 +112,7 @@ int cluster_set_next (fat_t * fat, cluster_t curr, cluster_t next) {
 void cluster_free_chain(fat_t * fat, cluster_t start) {
     while (cluster_is_valid(start)) {
         cluster_t next = cluster_get_next(fat, start);
+        // 设置成0
         cluster_set_next(fat, start, FAT_CLUSTER_FREE);
         start = next;
     }
@@ -601,6 +602,13 @@ int fatfs_write (char * buf, int size, file_t * file) {
 
             curr_write = fat->cluster_byte_size;
         } else {
+            /**
+             * 是的，在FAT16文件系统中，一个文件的起始是一定从一个簇的起始开始的。
+             * FAT（File Allocation Table）文件系统使用簇（cluster）作为最小的分配单位，
+             * 文件的存储必须从一个簇的起始位置开始，
+             * 这意味着文件的起始位置必须与簇的边界对齐。
+             * 每个簇可能由多个扇区组成，但文件存储总是以簇为单位进行管理。
+             */
             // 如果跨簇，只写第一个簇内的一部分
             if (cluster_offset + curr_write > fat->cluster_byte_size) {
                 curr_write = fat->cluster_byte_size - cluster_offset;

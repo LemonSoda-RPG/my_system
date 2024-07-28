@@ -601,6 +601,7 @@ static uint32_t load_elf_file(task_t *task,const char *name,uint32_t page_dir){
     // 一个elf文件中可能有多个程序头
 
     uint32_t e_phoff = elf_hdr.e_phoff;
+    // 只要不是设置的连续的内存分布 每一段内存 就会有一个程序头
     // 每个程序头的大小都是一样的 所以e_phoff += elf_hdr.e_phentsize 进行遍历
     for (int i = 0; i < elf_hdr.e_phnum; i++, e_phoff += elf_hdr.e_phentsize) {
         if (sys_lseek(file, e_phoff, 0) < 0) {
