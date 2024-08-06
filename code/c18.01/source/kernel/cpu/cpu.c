@@ -21,7 +21,7 @@ void segment_desc_set(int selector, uint32_t base, uint32_t limit, uint16_t attr
     segment_desc_t * desc = gdt_table + (selector >> 3);
 
 	// 如果界限比较长，将长度单位换成4KB
-	if (limit > 0xfffff) {
+	if (limit > 0xfffff) {    // 默认的单位是字节
 		attr |= 0x8000;
 		limit /= 0x1000;
 	}

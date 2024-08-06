@@ -62,6 +62,14 @@ typedef struct _gate_desc_t {
 	uint16_t offset31_16;
 }gate_desc_t;
 
+
+
+
+
+
+
+
+
 /**
  * tss描述符
  */

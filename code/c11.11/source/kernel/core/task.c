@@ -745,7 +745,7 @@ int sys_execve(char*name,char * * argv,char **env){
     frame->esi = frame->edi = frame->ebp = 0;
     frame->eflags = EFLAGS_DEFAULT| EFLAGS_IF;  // 段寄存器无需修改
 
-    // 修改用户栈的位置
+    // 修改用户栈的位置   // 因为压入了5个参数  
     frame->esp= stack_top - sizeof(uint32_t)*SYSCALL_PARAM_COUNT;
 
     task->tss.cr3 = new_page_dir;  // 这并没有使页表切换生效

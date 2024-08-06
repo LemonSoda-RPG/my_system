@@ -36,6 +36,7 @@ _start:
 	// 加载loader，只支持磁盘1
 	// https://wiki.osdev.org/Disk_access_using_the_BIOS_(INT_13h)
 read_loader:
+// 将loader的内容从磁盘读取到内存的指定地址0x8000
 	mov $0x8000, %bx	// 读取到的内存地址
 	mov $0x2, %cx		// ch:磁道号，cl起始扇区号
 	mov $0x2, %ah		// ah: 0x2读磁盘命令

@@ -27,6 +27,9 @@ SECTIONS
 	/* 初始进程的配置：接紧着在低端1MB内存开始存储，但是运行时搬运到0x80000000处 */
 	. = 0x80000000;
 
+	/* 	LOADADDR 是获取加载地址  可以理解为我们从哪个物理地址进行加载 
+		at就是用于指定加载地址的
+	*/
 	PROVIDE(s_first_task = LOADADDR(.first_task));
 	.first_task : AT(e_data) {
 		*first_task_entry*(.text .data. rodata .data)

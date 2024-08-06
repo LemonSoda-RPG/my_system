@@ -170,11 +170,11 @@ static const cli_cmd_t cmd_list[] = {
         .useage = "ls [dir] -- list director",
         .do_func = do_ls,
     },
-    {
-        .name = "less",
-        .useage = "less [file] -- open file",
-        .do_func = do_less,
-    },
+    // {
+    //     .name = "less",
+    //     .useage = "less [file] -- open file",
+    //     .do_func = do_less,
+    // },
     {
         .name = "quit",
         .useage = "quit from shell",
@@ -248,6 +248,14 @@ int main (int argc, char **argv) {
 	open(argv[0], O_RDWR);      // 不会创建额外的文件描述符     所以读写不会发生冲突
     dup(0);     // 标准输出
     dup(0);     // 标准错误输出
+
+
+    // int pid = fork();
+    // if(fork>0){
+    //     wait(NULL);
+    //     exit(0);
+    // }
+
     
     // 对shell解释器进行初始化
    	cli_init(promot, cmd_list, sizeof(cmd_list) / sizeof(cli_cmd_t));

@@ -27,6 +27,7 @@ void do_handler_timer (exception_frame_t *frame) {
  * 初始化硬件定时器
  */
 static void init_pit (void) {
+    // 每10毫秒触发一次定时中断
     uint32_t reload_count = PIT_OSC_FREQ / (1000.0 / OS_TICK_MS);
 
     // 2023-3-18 写错了，应该是模式3或者模式2

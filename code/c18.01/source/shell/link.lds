@@ -1,4 +1,5 @@
-ENTRY(_start)
+/* 在这里指定了入口 */
+ENTRY(_start)    
 SECTIONS
 {
     /* 为了方便调试，没有从0x80000000开始，以免与first_task冲突 */
@@ -10,6 +11,8 @@ SECTIONS
 	.rodata : {
 		*(*.rodata)
 	}
+
+
 
 	.data : {
 		*(*.data)

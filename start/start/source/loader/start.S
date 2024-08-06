@@ -27,12 +27,12 @@ _start:
 	// 有了global修饰  那么外部代码也能调用这个函数  
 	// 和extern的用法有点相似
 protect_mode_entry:
-	
+	// 16 是数据段
 	mov $16, %ax
 	mov %ax, %ds
 	mov %ax, %ss 
 	mov %ax, %es 
 	mov %ax, %fs 
 	mov %ax, %gs 
-
+	// 8 代码段
 	jmp $8, $load_kernel

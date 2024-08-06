@@ -4,7 +4,7 @@
  * 作者：李述铜
  * 联系邮箱: 527676163@qq.com
  */
-     .text
+    .text
     .global _start
     .extern cstart
 _start:

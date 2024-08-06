@@ -48,6 +48,9 @@ void log_printf(const char * fmt, ...) {
     kernel_vsprintf(str_buf, fmt, args);
     va_end(args);
 
+
+    
+
     // 显示，如果发送速度太慢，会造成这里关中断太长时间
     // 所以，这里这样做不是好办法
     mutex_lock(&mutex);

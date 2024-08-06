@@ -135,7 +135,7 @@ void load_kernel(void) {
 
 	// 开启分页机制
 	enable_page_mode();
-
+    // (void (*)(boot_info_t *)) 函数指针  返回值是void型  传参是boot_info_t * 指针
     ((void (*)(boot_info_t *))kernel_entry)(&boot_info);
     for (;;) {}
 }

@@ -13,7 +13,7 @@
 #include "fs/file.h"
 
 #define TASK_NAME_SIZE				32			// 任务名字长度
-#define TASK_TIME_SLICE_DEFAULT		10			// 时间片计数
+#define TASK_TIME_SLICE_DEFAULT		5			// 时间片计数
 #define TASK_OFILE_NR				128			// 最多支持打开的文件数量
 
 #define TASK_FLAG_SYSTEM       	(1 << 0)		// 系统任务

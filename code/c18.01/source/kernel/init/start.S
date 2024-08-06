@@ -24,7 +24,9 @@ _start:
     # mov 4(%esp), %eax
     # push %eax
 
-    # 第三种方法
+
+	# 将我们
+    # 第三种方法   这里的4 是偏移4个字节  因为我们此时已经是32位了
     push 4(%esp)
 
     # kernel_init(boot_info)
@@ -34,15 +36,16 @@ _start:
 	jmp $KERNEL_SELECTOR_CS, $gdt_reload
 
 gdt_reload:
+	
 	mov $KERNEL_SELECTOR_DS, %ax		// 16为数据段选择子
 	mov %ax, %ds
     mov %ax, %ss
     mov %ax, %es
     mov %ax, %fs
     mov %ax, %gs
-
 	// 栈设置
 	mov $(stack + KERNEL_STACK_SIZE), %esp
+	// 这个栈是被设置在bss段里面了
 
 	// 栈和段等沿用之前的设置
 	jmp init_main

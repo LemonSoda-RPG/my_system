@@ -18,9 +18,10 @@ int bitmap_byte_count (int bit_count) {
  * @brief 位图初始化
  */
 void bitmap_init (bitmap_t * bitmap, uint8_t * bits, int count, int init_bit) {
-    bitmap->bit_count = count;
-    bitmap->bits = bits;
-
+    bitmap->bit_count = count;  // 初始化一共有多少物理页
+    bitmap->bits = bits;   // 位图数据存放的地址   4G空间 需要 1024*1024个页  也就是1M个bit 除以8  那就是大约126kb大小的空间
+    // 实际上  我们只有128M不到的内存空间
+    // 将位图所在空间进行初始化  所以要获取位图以字节为单位的大小
     int bytes = bitmap_byte_count(bitmap->bit_count);
     kernel_memset(bitmap->bits, init_bit ? 0xFF: 0, bytes);
 }

@@ -77,7 +77,6 @@ static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     task->tss.esp = esp ? esp : kernel_stack + MEM_PAGE_SIZE;  // 未指定栈则用内核栈，即运行在特权级0的进程
     task->tss.esp0 = kernel_stack + MEM_PAGE_SIZE;
     task->tss.ss0 = KERNEL_SELECTOR_DS;
-    task->tss.eip = entry;
     task->tss.eflags = EFLAGS_DEFAULT| EFLAGS_IF;
     task->tss.es = task->tss.ss = task->tss.ds = task->tss.fs 
             = task->tss.gs = data_sel;   // 全部采用同一数据段
@@ -126,8 +125,6 @@ int sys_wait(int* status) {
 
             if (task->state == TASK_ZOMBIE) {
                 int pid = task->pid;
-
-
                 // 子进程当时结束时的运行状态
                 *status = task->status;
                 // 释放内存
@@ -254,7 +251,7 @@ int task_init (task_t *task, const char * name, int flag, uint32_t entry, uint32
     // 文件相关
     kernel_memset(task->file_table, 0, sizeof(task->file_table));
 
-    // 插入就绪队列中和所有的任务队列中
+    // 插入所有的任务队列中
     irq_state_t state = irq_enter_protection();
     task->pid = (uint32_t)task;   // 使用地址，能唯一
     list_insert_last(&task_manager.task_list, &task->all_node);
@@ -324,6 +321,7 @@ void task_first_init (void) {
 
     // 第一个任务代码量小一些，好和栈放在1个页面呢
     // 这样就不要立即考虑还要给栈分配空间的问题
+    // 这里给第一个任务分配的所有的空间大小就是alloc_size  这么大  first_start + alloc_size 就是栈基地址
     task_init(&task_manager.first_task, "first task", 0, first_start, first_start + alloc_size);
     task_manager.first_task.heap_start = (uint32_t)e_first_task;  // 这里不对
     task_manager.first_task.heap_end = task_manager.first_task.heap_start;
@@ -511,8 +509,8 @@ int sys_yield (void) {
         task_t * curr_task = task_current();
 
         // 如果队列中还有其它任务，则将当前任务移入到队列尾部
-        task_set_block(curr_task);
-        task_set_ready(curr_task);
+        task_set_block(curr_task); // 出队 
+        task_set_ready(curr_task);  // 入队
 
         // 切换至下一个任务，在切换完成前要保护，不然可能下一任务
         // 由于某些原因运行后阻塞或删除，再回到这里切换将发生问题

@@ -24,10 +24,14 @@ SECTIONS
 	}
 	e_data = .;
 
-	/* 初始进程的配置：接紧着在低端1MB内存开始存储，但是运行时搬运到0x80000000处 */
+	/* 初始进程的配置：接紧着在低端1MB内存开始存储，但是运行时搬运到0x80000000处 
+		AT(e_data) 指定加载的物理地址  所以我们要从	物理地址.first_task  拷贝到虚拟地址 s_first_task
+	*/
 	. = 0x80000000;
 
 	PROVIDE(s_first_task = LOADADDR(.first_task));
+
+	
 	.first_task : AT(e_data) {
 		*first_task_entry*(.text .data. rodata .data)
 		*first_task*(.text .data. rodata .data)
