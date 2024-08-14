@@ -248,7 +248,7 @@ int main (int argc, char **argv) {
 	open(argv[0], O_RDWR);      // 不会创建额外的文件描述符     所以读写不会发生冲突
     dup(0);     // 标准输出
     dup(0);     // 标准错误输出
-
+    printf("ssssss");
 
     // int pid = fork();
     // if(fork>0){

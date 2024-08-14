@@ -107,7 +107,7 @@ tss_init_failed:
 
 // 等待子进程结束并进行回收
 /**
- * @brief 等待子进程退出
+ * @brief 等待子进程退出  只会等待一个子进程退出  等到一个子进程并成功收尸  这个函数就结束了
  */
 int sys_wait(int* status) {
     task_t * curr_task = task_current();
@@ -190,8 +190,6 @@ void sys_exit(int status) {
 
 
 
-
-
     irq_state_t state = irq_enter_protection();
 
     task_t *parent = curr_task->parent;
@@ -209,8 +207,6 @@ void sys_exit(int status) {
         task_set_ready(curr_task->parent);
     }
     
-
-
     curr_task->state = TASK_ZOMBIE;
     curr_task->status = status;
     // 将任务从就绪队列删除
@@ -219,7 +215,6 @@ void sys_exit(int status) {
     task_dispatch();
     irq_leave_protection(state);
 
-   
 
 }
 /**
@@ -293,8 +288,8 @@ void simple_switch (uint32_t ** from, uint32_t * to);
  * @brief 切换至指定任务
  */
 void task_switch_from_to (task_t * from, task_t * to) {
-     switch_to_tss(to->tss_sel);
-    //simple_switch(&from->stack, to->stack);
+     switch_to_tss(to->tss_sel);   // 这个是cpu自动切换
+    //simple_switch(&from->stack, to->stack);   // 这个是手动切换
 }
 
 /**
@@ -555,6 +550,7 @@ void task_time_tick (void) {
     
     // 睡眠处理
     list_node_t * curr = list_first(&task_manager.sleep_list);
+    // 对睡眠链表进行遍历
     while (curr) {
         list_node_t * next = list_node_next(curr);
 
@@ -566,7 +562,8 @@ void task_time_tick (void) {
         }
         curr = next;
     }
-
+    // 中断是否开启，只与当前任务的tss中的if标志位相关，所以这里即使不恢复中断，切换任务之后，也不会影响
+    // 切换之后中断是否开启，只取决于我们要切换过去的任务的tss中的if标志位
     task_dispatch();
     irq_leave_protection(state);
 }

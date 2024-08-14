@@ -156,6 +156,7 @@ simple_switch:
     .global exception_handler_syscall
     .extern do_handler_syscall
 exception_handler_syscall:
+	// 在调用这个函数之前，压入了5个参数到栈里   和下面压入栈中的数据一起  之后我们通过frame参数进行访问，我们就当frame就是我们的函数传参
 	// 保存前一任务的状态
 	pusha
 	push %ds
@@ -177,7 +178,7 @@ exception_handler_syscall:
 	call do_handler_syscall
 	add $4, %esp
 
-    // 再切换回来
+    // 再切换回来 将之前压入到栈里的数据弹出
 	popf
 	pop %gs
 	pop %fs
