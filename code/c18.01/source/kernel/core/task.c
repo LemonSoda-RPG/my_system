@@ -635,6 +635,7 @@ int sys_fork (void) {
 
     // 对子进程进行初始化，并对必要的字段进行调整
     // 其中esp要减去系统调用的总参数字节大小，因为其是通过正常的ret返回, 而没有走系统调用处理的ret(参数个数返回)
+    
     int err = task_init(child_task,  parent_task->name, 0, frame->eip,
                         frame->esp + sizeof(uint32_t)*SYSCALL_PARAM_COUNT);
     if (err < 0) {
@@ -662,9 +663,10 @@ int sys_fork (void) {
     tss->eflags = frame->eflags;
 
     child_task->parent = parent_task;
-
+    
+    // memory_free_page(child_task->tss.cr3);   // 释放原来的页表
     // 复制父进程的内存空间到子进程
-    if ((child_task->tss.cr3 = memory_copy_uvm(parent_task->tss.cr3)) < 0) {
+    if ((child_task->tss.cr3 = memory_copy_uvm(parent_task->tss.cr3,child_task->tss.cr3)) < 0) {
         goto fork_failed;
     }
 
@@ -705,6 +707,7 @@ static int load_phdr(int file, Elf32_Phdr * phdr, uint32_t page_dir) {
     uint32_t vaddr = phdr->p_vaddr;
     uint32_t size = phdr->p_filesz;
     while (size > 0) {
+        // 每次读取一个页表大小的数据
         int curr_size = (size > MEM_PAGE_SIZE) ? MEM_PAGE_SIZE : size;
 
         uint32_t paddr = memory_get_paddr(page_dir, vaddr);
@@ -786,7 +789,7 @@ static uint32_t load_elf_file (task_t * task, const char * name, uint32_t page_d
         if ((elf_phdr.p_type != PT_LOAD) || (elf_phdr.p_vaddr < MEMORY_TASK_BASE)) {
            continue;
         }
-        //page_dir 新任务的页表  
+        // page_dir 新任务的页表  
         // 加载当前程序头
         int err = load_phdr(file, &elf_phdr, page_dir);
         if (err < 0) {
@@ -797,7 +800,7 @@ static uint32_t load_elf_file (task_t * task, const char * name, uint32_t page_d
         // 简单起见，不检查了，以最后的地址为bss的地址
         task->heap_start = elf_phdr.p_vaddr + elf_phdr.p_memsz;
         task->heap_end = task->heap_start;
-   }
+    }
 
     sys_close(file);
     return elf_hdr.e_entry;
@@ -812,8 +815,10 @@ load_failed:
 
 /**
  * @brief 复制进程参数到栈中。注意argv和env指向的空间在另一个页表里
+ *       因为此时我们还没有切换页表
  */
 static int copy_args (char * to, uint32_t page_dir, int argc, char **argv) {
+    // 我们需要通过虚拟地址to  找到新的页表中对应的物理地址
     // 在stack_top中依次写入argc, argv指针，参数字符串
     task_args_t task_args;
     task_args.argc = argc;
@@ -823,7 +828,7 @@ static int copy_args (char * to, uint32_t page_dir, int argc, char **argv) {
     // 各argv参数写入的内存空间
     char * dest_arg = to + sizeof(task_args_t) + sizeof(char *) * (argc);   // 留出结束符
     
-    // argv表
+    // argv表  获取物理地址
     char ** dest_argv_tb = (char **)memory_get_paddr(page_dir, (uint32_t)(to + sizeof(task_args_t)));
     ASSERT(dest_argv_tb != 0);
 
@@ -865,6 +870,7 @@ int sys_execve(char *name, char **argv, char **env) {
     }
 
     // 加载elf文件到内存中。要放在开启新页表之后，这样才能对相应的内存区域写
+    
     uint32_t entry = load_elf_file(task, name, new_page_dir);    // 暂时置用task->name表示
     if (entry == 0) {
         goto exec_failed;
@@ -872,6 +878,7 @@ int sys_execve(char *name, char **argv, char **env) {
 
     // 准备用户栈空间，预留环境环境及参数的空间
     uint32_t stack_top = MEM_TASK_STACK_TOP - MEM_TASK_ARG_SIZE;    // 预留一部分参数空间
+    // 因为分配内存的时候  是从低地址开始分配 
     int err = memory_alloc_for_page_dir(new_page_dir,
                             MEM_TASK_STACK_TOP - MEM_TASK_STACK_SIZE,
                             MEM_TASK_STACK_SIZE, PTE_P | PTE_U | PTE_W);
@@ -879,7 +886,7 @@ int sys_execve(char *name, char **argv, char **env) {
         goto exec_failed;
     }
 
-    // 复制参数，写入到栈顶的后边
+    // 复制参数，写入到栈顶的后边  此时stack_top就是指向的栈顶
     int argc = strings_count(argv);
     err = copy_args((char *)stack_top, new_page_dir, argc, argv);
     if (err < 0) {
@@ -898,6 +905,7 @@ int sys_execve(char *name, char **argv, char **env) {
 
     // 内核栈不用设置，保持不变，后面调用memory_destroy_uvm并不会销毁内核栈的映射。
     // 但用户栈需要更改, 同样要加上调用门的参数压栈空间
+    // 是因为外面我们又恢复了
     frame->esp = stack_top - sizeof(uint32_t)*SYSCALL_PARAM_COUNT;
 
     // 切换到新的页表

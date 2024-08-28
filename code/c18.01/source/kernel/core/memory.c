@@ -247,16 +247,19 @@ void memory_destroy_uvm (uint32_t page_dir) {
 /**
  * @brief 复制页表及其所有的内存空间
  */
-uint32_t memory_copy_uvm (uint32_t page_dir) {
+uint32_t memory_copy_uvm (uint32_t page_dir,uint32_t child_page_dir) {
     // 复制基础页表
-    uint32_t to_page_dir = memory_create_uvm();
+    // memory_free_page()
+    // uint32_t to_page_dir = memory_create_uvm();
+    uint32_t to_page_dir = child_page_dir;
+
     if (to_page_dir == 0) {
         goto copy_uvm_failed;
     }
 
-    // 再复制用户空间的各项
+    // 再复制用户空间的各项   一级页表 下标
     uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);
-    pde_t * pde = (pde_t *)page_dir + user_pde_start;
+    pde_t * pde = (pde_t *)page_dir + user_pde_start;    //指向二级页表
 
     // 遍历用户空间页目录项
     for (int i = user_pde_start; i < PDE_CNT; i++, pde++) {
@@ -265,25 +268,27 @@ uint32_t memory_copy_uvm (uint32_t page_dir) {
         }
 
         // 遍历页表
-        pte_t * pte = (pte_t *)pde_paddr(pde);
+        pte_t * pte = (pte_t *)pde_paddr(pde);     // 指向物理页表
         for (int j = 0; j < PTE_CNT; j++, pte++) {
             if (!pte->present) {
                 continue;
             }
 
             // 分配物理内存  这里是真的分了一个存储数据的物理页
-            uint32_t page = addr_alloc_page(&paddr_alloc, 1);
+            uint32_t page = addr_alloc_page(&paddr_alloc, 1);   // 返回的是物理地址
             if (page == 0) {
                 goto copy_uvm_failed;
             }
 
             // 建立映射关系
             uint32_t vaddr = (i << 22) | (j << 12);
+            // 将这个物理页 与 子进程的页表建立映射关系   
             int err = memory_create_map((pde_t *)to_page_dir, vaddr, page, 1, get_pte_perm(pte));
             if (err < 0) {
                 goto copy_uvm_failed;
             }
 
+            // 将
             // 复制内容。
             kernel_memcpy((void *)page, (void *)vaddr, MEM_PAGE_SIZE);
         }
@@ -344,7 +349,7 @@ int memory_copy_uvm_data(uint32_t to, uint32_t page_dir, uint32_t from, uint32_t
 uint32_t memory_alloc_for_page_dir (uint32_t page_dir, uint32_t vaddr, uint32_t size, int perm) {
     uint32_t curr_vaddr = vaddr;
     int page_count = up2(size, MEM_PAGE_SIZE) / MEM_PAGE_SIZE;
-    vaddr = down2(vaddr, MEM_PAGE_SIZE);
+    vaddr = down2(vaddr, MEM_PAGE_SIZE);  // 起点 往小的对齐
 
     // 逐页分配内存，然后建立映射关系
     for (int i = 0; i < page_count; i++) {

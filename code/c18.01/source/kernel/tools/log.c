@@ -73,7 +73,7 @@ void log_printf(const char * fmt, ...) {
 #else
     // 原本是通过控制台打印
     // 现在我们有了tty  所以现在使用tty进行打印
-    //console_write(0, str_buf, kernel_strlen(str_buf));
+    // console_write(0, str_buf, kernel_strlen(str_buf));
     //  写入信息
     dev_write(log_dev_id, 0, str_buf, kernel_strlen(str_buf));
 

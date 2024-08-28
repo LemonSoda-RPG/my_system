@@ -245,18 +245,20 @@ static void run_exec_file(const char *path,int argc,char**argv){
 }
 char temp[256];
 int main (int argc, char **argv) {
+
 	open(argv[0], O_RDWR);      // 不会创建额外的文件描述符     所以读写不会发生冲突
     dup(0);     // 标准输出
     dup(0);     // 标准错误输出
-    printf("ssssss");
 
     // int pid = fork();
     // if(fork>0){
     //     wait(NULL);
     //     exit(0);
     // }
-
-    
+    // printf("ssssss\n");
+    // int a = 10;
+    // int b = a/0;
+    void *addr = sbrk(10);
     // 对shell解释器进行初始化
    	cli_init(promot, cmd_list, sizeof(cmd_list) / sizeof(cli_cmd_t));
     for (;;) {
