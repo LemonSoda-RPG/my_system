@@ -83,7 +83,7 @@ static int tss_init (task_t * task, int flag, uint32_t entry, uint32_t esp) {
     task->tss.cs = code_sel; 
     task->tss.iomap = 0;
 
-    // 页表初始化
+    // 页表初始化   这里已经分配一个页表了
     uint32_t page_dir = memory_create_uvm();
     if (page_dir == 0) {
         goto tss_init_failed;
@@ -664,7 +664,7 @@ int sys_fork (void) {
 
     child_task->parent = parent_task;
     
-    // memory_free_page(child_task->tss.cr3);   // 释放原来的页表
+    // memory_free_page(child_task->tss.cr3);   // 释放原来的页表  前面初始化tss的时候 已经分配过页表了
     // 复制父进程的内存空间到子进程
     if ((child_task->tss.cr3 = memory_copy_uvm(parent_task->tss.cr3,child_task->tss.cr3)) < 0) {
         goto fork_failed;
@@ -797,6 +797,8 @@ static uint32_t load_elf_file (task_t * task, const char * name, uint32_t page_d
             goto load_failed;
         }
 
+
+        // 堆的起始地址  就在bss段的旁边
         // 简单起见，不检查了，以最后的地址为bss的地址
         task->heap_start = elf_phdr.p_vaddr + elf_phdr.p_memsz;
         task->heap_end = task->heap_start;

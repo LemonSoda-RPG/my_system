@@ -53,6 +53,9 @@ gdt_reload:
 	.bss
 .comm stack, KERNEL_STACK_SIZE    // comm 声明未初始化的通用内存区域，以字节计
 
+// 有了上面这个声明  链接器就会在bss段为stack分配KERNEL_STACK_SIZE大小的字节  当然起始位置我们不需要关心
+// 我们现在只知道 这个stack  确实是被划分到bss段当中去了
+
 
 // 中断发生时，会自动切换到特权级0对应的栈中去执行
 // 并且只保存ss,esp,cs,eip,flags寄存器

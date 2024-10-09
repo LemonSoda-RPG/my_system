@@ -86,7 +86,7 @@ static inline uint32_t read_cr4() {
 static inline void write_cr4(uint32_t v) {
     __asm__ __volatile__("mov %[v], %%cr4"::[v]"r"(v));
 }
-
+// 当ljmpl跳转目标是一个tss段选择子的时候，会自动切换tr寄存器
 static inline void far_jump(uint32_t selector, uint32_t offset) {
 	uint32_t addr[] = {offset, selector };
 	__asm__ __volatile__("ljmpl *(%[a])"::[a]"r"(addr));

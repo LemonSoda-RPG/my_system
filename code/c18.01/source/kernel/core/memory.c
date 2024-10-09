@@ -248,7 +248,7 @@ void memory_destroy_uvm (uint32_t page_dir) {
  * @brief 复制页表及其所有的内存空间
  */
 uint32_t memory_copy_uvm (uint32_t page_dir,uint32_t child_page_dir) {
-    // 复制基础页表
+    // 复制基础页表   之前分配过也标了  这里就不需要再次进行分配了  直接使用child_page_dir  进行复制
     // memory_free_page()
     // uint32_t to_page_dir = memory_create_uvm();
     uint32_t to_page_dir = child_page_dir;
@@ -259,6 +259,7 @@ uint32_t memory_copy_uvm (uint32_t page_dir,uint32_t child_page_dir) {
 
     // 再复制用户空间的各项   一级页表 下标
     uint32_t user_pde_start = pde_index(MEMORY_TASK_BASE);
+    // 父进程的二级页表
     pde_t * pde = (pde_t *)page_dir + user_pde_start;    //指向二级页表
 
     // 遍历用户空间页目录项
