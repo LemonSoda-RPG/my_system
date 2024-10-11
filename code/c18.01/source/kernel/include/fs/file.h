@@ -34,7 +34,7 @@ typedef struct _file_t {
     int dev_id;                 // 文件所属的设备号 
     int pos;                   	// 当前位置
     int mode;					// 读写模式
-    struct _fs_t *fs;           // 文件管理系统
+    struct _fs_t *fs;           // ⭐⭐⭐文件管理系统
 } file_t;
 
 file_t * file_alloc (void) ;

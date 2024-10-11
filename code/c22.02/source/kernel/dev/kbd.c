@@ -97,7 +97,7 @@ void kbd_wait_send_ready(void) {
  * 向键盘端口写数据
  */
 void kbd_write(uint8_t port, uint8_t data) {
-    kbd_wait_send_ready();
+    kbd_wait_send_ready();  // 对寄存器进行检测   当可写的时候 再写
     outb(port, data);
 }
 
@@ -288,7 +288,7 @@ void kbd_init(void) {
 
     if (!inited) {
         update_led_status();
-
+        // 注册中断处理函数
         irq_install(IRQ1_KEYBOARD, (irq_handler_t)exception_handler_kbd);
         irq_enable(IRQ1_KEYBOARD);
 

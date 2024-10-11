@@ -28,7 +28,7 @@
 #define SFN_LEN                    	 	11              // sfn文件名长
 
 /**
- * FAT目录项
+ * FAT目录项   这只是一项  代表一个文件或者目录
  */
 typedef struct _diritem_t {
     uint8_t DIR_Name[11];                   // 文件名
@@ -74,7 +74,7 @@ typedef struct _dbr_t {
 #pragma pack()
 
 /**
- * fat结构
+ * fat结构   自定的结构体  用于保存dbr中的有用的数据
  */
 typedef struct _fat_t {
     // fat文件系统本身信息

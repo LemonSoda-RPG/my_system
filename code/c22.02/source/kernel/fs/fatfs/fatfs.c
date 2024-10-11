@@ -282,12 +282,12 @@ static int write_dir_entry (fat_t * fat, diritem_t * item, int index) {
 
     int offset = index * sizeof(diritem_t);
     int sector = fat->root_start + offset / fat->bytes_per_sec;
-    int err = bread_sector(fat, sector);
+    int err = bread_sector(fat, sector);  // 读取数据  修改之后  再写回
     if (err < 0) {
         return -1;
     }
     kernel_memcpy(fat->fat_buffer + offset % fat->bytes_per_sec, item, sizeof(diritem_t));
-    return bwrite_secotr(fat, sector);
+    return bwrite_secotr(fat, sector);   // 写回数据
 }
 
 
@@ -364,6 +364,7 @@ static int move_file_pos(file_t* file, fat_t * fat, uint32_t move_bytes, int exp
  */
 int fatfs_mount (struct _fs_t * fs, int dev_major, int dev_minor) {
     // 打开设备
+    // 这里应该是open disk
     int dev_id = dev_open(dev_major, dev_minor, (void *)0);
     if (dev_id < 0) {
         log_printf("open disk failed. major: %x, minor: %x", dev_major, dev_minor);
@@ -444,6 +445,7 @@ static void read_from_diritem (fat_t * fat, file_t * file, diritem_t * item, int
     file->type = diritem_get_type(item);   //文件类型
     file->size = (int)item->DIR_FileSize;
     file->pos = 0;
+    // 记录当前是第几簇，以及文件的起始簇
     file->sblk = (item->DIR_FstClusHI << 16) | item->DIR_FstClusL0;
     file->cblk = file->sblk;
     file->p_index = index;
@@ -498,7 +500,9 @@ int fatfs_open (struct _fs_t * fs, const char * path, file_t * file) {
             file->size = 0;
         }
         return 0;
-    } else if ((file->mode & O_CREAT) && (p_index >= 0)) {
+    }
+    // 这里是创建新文件 
+    else if ((file->mode & O_CREAT) && (p_index >= 0)) {
         // 创建一个空闲的diritem项
         diritem_t item;
         diritem_init(&item, 0, path);

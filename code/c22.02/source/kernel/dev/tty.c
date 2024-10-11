@@ -44,7 +44,7 @@ int tty_fifo_get (tty_fifo_t * fifo, char * c) {
 }
 
 /**
- * @brief 写一字节数据
+ * @brief 写一字节数据  其实就是将数据写入到tty自身的写缓冲当中
  */
 int tty_fifo_put (tty_fifo_t * fifo, char c) {
 	if (fifo->count >= fifo->size) {
@@ -158,6 +158,7 @@ int tty_read (device_t * dev, int addr, char * buf, int size) {
 	// 不断读取，直到遇到文件结束符或者行结束符
 	while (len < size) {
 		// 等待可用的数据
+		// 一个字节的数据  一个信号量  这里就是每次读取一个字节
 		sem_wait(&tty->isem);
 
 		// 取出数据
@@ -184,9 +185,10 @@ int tty_read (device_t * dev, int addr, char * buf, int size) {
 				len++;
 				break;
 		}
-
+		// 这里就是开启了回显吧    
+		// 每次按下按下按键就会显示
 		if (tty->iflags & TTY_IECHO) {
-		    tty_write(dev, 0, &ch, 1);
+		    tty_write(dev, 0, &ch, 1);  // 只有在这里调用了tty_write
 		}
 
 		// 遇到一行结束，也直接跳出
@@ -244,6 +246,7 @@ void tty_in (char ch) {
 	}
 
 	// 写入辅助队列，通知数据到达
+	// 写入就相当于添加信号量   当写入的数据很多，那就是信号量大于缓存大小的时候 就直接返回 不写了
 	tty_fifo_put(&tty->ififo, ch);
 	sem_notify(&tty->isem);
 }

@@ -457,6 +457,8 @@ static void write_esc_square (console_t * console, char c) {
  * 实现pwdget作为tty的输出
  * 可能有多个进程在写，注意保护
  */
+// 我们的这个tty设备好像是虚拟的啊  tty是一个虚拟的上层管理系统  管理了键盘和终端两个硬件
+// 每一个tty 都拥有一个键盘和一个终端   对于键盘来说 它使用的缓冲是ififo  那么终端使用的缓冲就是ofifo
 int console_write (tty_t * tty) {
 	console_t * console = console_buf + tty->console_idx;
 

@@ -235,7 +235,7 @@ int disk_open (device_t * dev) {
     }
 
     // 磁盘存在，建立关联
-    dev->data = part_info;
+    dev->data = part_info;   
     irq_install(IRQ14_HARDDISK_PRIMARY, exception_handler_ide_primary);
     irq_enable(IRQ14_HARDDISK_PRIMARY);
     return 0;

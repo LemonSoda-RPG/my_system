@@ -386,6 +386,7 @@ void task_manager_init (void) {
     list_init(&task_manager.sleep_list);
 
     // 空闲任务初始化
+    // 空闲任务的代码本身就在内核中  所以不需要拷贝数据到用户态的页表
     task_init(&task_manager.idle_task,
                 "idle task",
                 TASK_FLAG_SYSTEM,
@@ -631,11 +632,13 @@ int sys_fork (void) {
         goto fork_failed;
     }
 
+    // 获取父进程的压栈信息   因为进入系统调用是要压栈的 通过操作esp指针  能够获得父进程的压栈信息
+    // 然后我们将这些信息复制到子进程当中
     syscall_frame_t * frame = (syscall_frame_t *)(parent_task->tss.esp0 - sizeof(syscall_frame_t));
 
     // 对子进程进行初始化，并对必要的字段进行调整
     // 其中esp要减去系统调用的总参数字节大小，因为其是通过正常的ret返回, 而没有走系统调用处理的ret(参数个数返回)
-    
+    // 因为对于子进程来说 这些压栈信息是没有用的
     int err = task_init(child_task,  parent_task->name, 0, frame->eip,
                         frame->esp + sizeof(uint32_t)*SYSCALL_PARAM_COUNT);
     if (err < 0) {

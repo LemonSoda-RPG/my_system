@@ -384,6 +384,7 @@ static void run_exec_file (const char * path, int argc, char ** argv) {
 }
 
 int main (int argc, char **argv) {
+    // 这个open 其实就是打开的tty设备  
 	open(argv[0], O_RDWR);
     dup(0);     // 标准输出
     dup(0);     // 标准错误输出
